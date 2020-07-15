@@ -1,8 +1,8 @@
-package com.github.ummcheng.intellij.listeners
+package ai.serenade.intellij.listeners
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManagerListener
-import com.github.ummcheng.intellij.services.MyProjectService
+import ai.serenade.intellij.services.MyProjectService
 
 internal class MyProjectManagerListener : ProjectManagerListener {
 

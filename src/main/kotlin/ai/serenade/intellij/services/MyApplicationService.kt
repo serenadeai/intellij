@@ -1,6 +1,6 @@
-package com.github.ummcheng.intellij.services
+package ai.serenade.intellij.services
 
-import com.github.ummcheng.intellij.MyBundle
+import ai.serenade.intellij.MyBundle
 
 class MyApplicationService {
 

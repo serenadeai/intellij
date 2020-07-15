@@ -1,4 +1,4 @@
-package com.github.ummcheng.intellij
+package ai.serenade.intellij
 
 import com.intellij.AbstractBundle
 import org.jetbrains.annotations.NonNls

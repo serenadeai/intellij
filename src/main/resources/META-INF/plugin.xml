@@ -1,19 +1,19 @@
 <idea-plugin>
-    <id>com.github.ummcheng.intellij</id>
-    <name>intellij</name>
-    <vendor>ummcheng</vendor>
+    <id>ai.serenade.intellij</id>
+    <name>Serenade</name>
+    <vendor>Serenade</vendor>
 
     <!-- Product and plugin compatibility requirements -->
     <!-- https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html -->
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="com.github.ummcheng.intellij.services.MyApplicationService"/>
-        <projectService serviceImplementation="com.github.ummcheng.intellij.services.MyProjectService"/>
+        <applicationService serviceImplementation="ai.serenade.intellij.services.MyApplicationService"/>
+        <projectService serviceImplementation="ai.serenade.intellij.services.MyProjectService"/>
     </extensions>
 
     <projectListeners>
-        <listener class="com.github.ummcheng.intellij.listeners.MyProjectManagerListener"
+        <listener class="ai.serenade.intellij.listeners.MyProjectManagerListener"
                   topic="com.intellij.openapi.project.ProjectManagerListener"/>
     </projectListeners>
 </idea-plugin>

@@ -1,7 +1,7 @@
-package com.github.ummcheng.intellij.services
+package ai.serenade.intellij.services
 
 import com.intellij.openapi.project.Project
-import com.github.ummcheng.intellij.MyBundle
+import ai.serenade.intellij.MyBundle
 
 class MyProjectService(project: Project) {
 
