@@ -1,8 +1,8 @@
 package ai.serenade.intellij.listeners
 
+import ai.serenade.intellij.services.MyProjectService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManagerListener
-import ai.serenade.intellij.services.MyProjectService
 
 internal class MyProjectManagerListener : ProjectManagerListener {
 
