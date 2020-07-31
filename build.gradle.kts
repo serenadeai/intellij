@@ -14,7 +14,7 @@ plugins {
     id("org.jetbrains.changelog") version "0.4.0"
     // detekt linter - read more: https://detekt.github.io/detekt/kotlindsl.html
     id("io.gitlab.arturbosch.detekt") version "1.10.0"
-    // ktlint linter - read more: https://github.com/JLLeitschuh/ktlint-gradle
+    // ktlint linter - read more: https://github.com/JLLeitschuh/ktlint-gradleg
     id("org.jlleitschuh.gradle.ktlint") version "9.2.1"
 }
 
@@ -31,6 +31,7 @@ val platformDownloadSources: String by project
 
 group = pluginGroup
 version = pluginVersion
+val ktor_version = "1.3.2"
 
 // Configure project's dependencies
 repositories {
@@ -40,6 +41,11 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.10.0")
+    implementation("io.ktor:ktor-client-websockets:$ktor_version")
+    implementation("io.ktor:ktor-client-cio:$ktor_version")
+    implementation("io.ktor:ktor-client-js:$ktor_version")
+    implementation("io.ktor:ktor-client-okhttp:$ktor_version")
+    implementation("com.google.code.gson:gson:2.8.5")
 }
 
 // Configure gradle-intellij-plugin plugin.
@@ -53,7 +59,6 @@ intellij {
 
 //  Plugin Dependencies:
 //  https://www.jetbrains.org/intellij/sdk/docs/basics/plugin_structure/plugin_dependencies.html
-//
     setPlugins("java")
 }
 
