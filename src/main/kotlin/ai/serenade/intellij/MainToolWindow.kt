@@ -12,7 +12,8 @@ class MainToolWindow : ToolWindowFactory {
         val contentFactory: ContentFactory = ContentFactory.SERVICE.getInstance()
         val content: Content = contentFactory.createContent(panel {
             noteRow("Welcome to Serenade!")
-            noteRow("With Serenade, you can write code faster&mdash;by speaking in plain English, rather than typing. Use Serenade as your coding assistant, or abandon your keyboard entirely.")
+            noteRow("With Serenade, you can write code faster&mdash;by speaking in plain English, " +
+                "rather than typing. Use Serenade as your coding assistant, or abandon your keyboard entirely.")
             noteRow("To get started, download the Serenade app and run it alongside IntelliJ.")
             noteRow("<a class=\"serenade-download\" href=\"https://serenade.ai/\">Download</a>")
         }, "", false)

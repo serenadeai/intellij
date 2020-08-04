@@ -1,7 +1,5 @@
 package ai.serenade.intellij.listeners
 
-import kotlinx.serialization.*
-import kotlinx.serialization.json.*
 import com.intellij.notification.NotificationDisplayType
 import com.intellij.notification.NotificationGroup
 import com.intellij.notification.NotificationType
@@ -19,6 +17,9 @@ import io.ktor.http.cio.websocket.readText
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonConfiguration
 
 @Serializable
 data class Execute(
@@ -61,8 +62,6 @@ data class Response(
     val message: String,
     val data: ResponseData
 )
-
-
 
 class MyProjectManagerListener(private val project: Project) : ToolWindowManagerListener {
     private val json = Json(JsonConfiguration.Default.copy(
