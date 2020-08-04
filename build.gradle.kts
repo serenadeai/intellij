@@ -8,13 +8,14 @@ plugins {
     id("java")
     // Kotlin support
     id("org.jetbrains.kotlin.jvm") version "1.3.72"
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.3.70"
     // gradle-intellij-plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin
     id("org.jetbrains.intellij") version "0.4.21"
     // gradle-changelog-plugin - read more: https://github.com/JetBrains/gradle-changelog-plugin
     id("org.jetbrains.changelog") version "0.4.0"
     // detekt linter - read more: https://detekt.github.io/detekt/kotlindsl.html
     id("io.gitlab.arturbosch.detekt") version "1.10.0"
-    // ktlint linter - read more: https://github.com/JLLeitschuh/ktlint-gradleg
+    // ktlint linter - read more: https://github.com/JLLeitschuh/ktlint-gradle
     id("org.jlleitschuh.gradle.ktlint") version "9.2.1"
 }
 
@@ -45,7 +46,7 @@ dependencies {
     implementation("io.ktor:ktor-client-cio:$ktor_version")
     implementation("io.ktor:ktor-client-js:$ktor_version")
     implementation("io.ktor:ktor-client-okhttp:$ktor_version")
-    implementation("com.google.code.gson:gson:2.8.5")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0")
 }
 
 // Configure gradle-intellij-plugin plugin.
