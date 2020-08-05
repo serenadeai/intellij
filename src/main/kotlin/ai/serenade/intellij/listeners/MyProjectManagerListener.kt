@@ -4,6 +4,9 @@ import com.intellij.notification.NotificationDisplayType
 import com.intellij.notification.NotificationGroup
 import com.intellij.notification.NotificationType
 import com.intellij.notification.Notifications
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
@@ -14,6 +17,7 @@ import io.ktor.client.features.websocket.WebSockets
 import io.ktor.client.features.websocket.ws
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
@@ -22,13 +26,27 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 
 @Serializable
+data class Command(
+    val type: String,
+    val source: String? = null,
+    val cursor: Int? = null,
+    val cursorEnd: Int? = null
+)
+
+@Serializable
+data class Alternatives(
+    val commandsList: List<Command>? = null
+)
+
+@Serializable
 data class Execute(
-    val commandsList: List<Map<String, String>>
+    val commandsList: List<Command>? = null
 )
 
 @Serializable
 data class ClientResponse(
-    val execute: Execute?
+    val execute: Execute? = null,
+    val alternativesList: List<Alternatives>? = null
 )
 
 @Serializable
@@ -83,6 +101,7 @@ class MyProjectManagerListener(private val project: Project) : ToolWindowManager
         isLenient = true // empty strings
     ))
     private val notificationGroup = NotificationGroup("Serenade", NotificationDisplayType.BALLOON, true)
+    // TODO: pick first editor if none are selected
     private val editor = FileEditorManager.getInstance(project).selectedTextEditor
     private var webSocketSession: DefaultClientWebSocketSession? = null
 
@@ -93,6 +112,7 @@ class MyProjectManagerListener(private val project: Project) : ToolWindowManager
         Notifications.Bus.notify(notification, project)
     }
 
+    @ExperimentalCoroutinesApi
     override fun toolWindowShown(id: String, toolWindow: ToolWindow) {
         notify("id: $id")
 
@@ -130,31 +150,53 @@ class MyProjectManagerListener(private val project: Project) : ToolWindowManager
         }
     }
 
-    private suspend fun sendEditorState(callback: String) {
-        val document = editor?.document
-        val source = document?.text ?: ""
-
-        webSocketSession?.send(Frame.Text(json.stringify(
-            Response.serializer(),
-            Response("callback", ResponseData(
-                null, null,
-                callback,
-                CallbackData(
-                    "editorState",
-                    NestedData(
-                        source,
-                        0,
-                        "",
-                        emptyList(),
-                        emptyList(),
-                        emptyList()
-                    )
-                )
-            ))
-        )))
+    private fun diff(command: Command) {
+        val write: () -> Unit = {
+            command.source?.let { editor?.document?.replaceString(0, editor.document.textLength, it) }
+            val cursor = command.cursor?: 0
+            editor?.caretModel?.moveToOffset(cursor)
+        }
+        WriteCommandAction.runWriteCommandAction(project, write)
     }
 
-    private suspend fun onMessage(frame: Frame.Text) {
+    private fun sendEditorState(callback: String) {
+        val read: () -> Unit = {
+            val document = editor?.document
+            val source = document?.text ?: ""
+            val cursor = editor?.selectionModel?.selectionStart ?: 0
+            val filename = document?.let { FileDocumentManager.getInstance().getFile(it)?.name }
+            val files: List<String> = emptyList() // TODO
+            val roots: List<String> = emptyList() // TODO
+            val tabs: List<String> = emptyList() // TODO
+
+            val frame = Frame.Text(json.stringify(
+                Response.serializer(),
+                Response("callback", ResponseData(
+                    null, null,
+                    callback,
+                    CallbackData(
+                        "editorState",
+                        NestedData(
+                            source,
+                            cursor,
+                            filename,
+                            files,
+                            roots,
+                            tabs
+                        )
+                    )
+                ))
+            ))
+
+            GlobalScope.launch {
+                webSocketSession?.send(frame)
+            }
+        }
+
+        ApplicationManager.getApplication().runReadAction(read)
+    }
+
+    private fun onMessage(frame: Frame.Text) {
         try {
             val request = json.parse(Request.serializer(), frame.readText())
 
@@ -168,11 +210,17 @@ class MyProjectManagerListener(private val project: Project) : ToolWindowManager
                 request.data.response?.execute?.commandsList?.let {
                     notify(it.toString())
                     for (command in it) {
-                        for (value in command.values) {
-                            notify(value)
+                        notify(command.type)
 
-                            if (value == "COMMAND_TYPE_GET_EDITOR_STATE") {
+                        when(command.type) {
+                            "COMMAND_TYPE_GET_EDITOR_STATE" -> {
                                 sendEditorState(callback)
+                            }
+                            "COMMAND_TYPE_DIFF" -> {
+                                diff(command)
+                            }
+                            else -> {
+                                notify("Command type not implemented: " + command.type)
                             }
                         }
                     }
@@ -180,7 +228,8 @@ class MyProjectManagerListener(private val project: Project) : ToolWindowManager
             }
         }
         catch (e: Exception) {
-            notify("Failed to parse " + frame.readText())
+            notify("Failed to parse or execute" + frame.readText())
+            notify(e.toString())
         }
     }
 }
