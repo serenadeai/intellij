@@ -11,7 +11,7 @@ import com.intellij.openapi.wm.ex.ToolWindowManagerListener
 import io.ktor.client.HttpClient
 import io.ktor.client.features.websocket.DefaultClientWebSocketSession
 import io.ktor.client.features.websocket.WebSockets
-import io.ktor.client.features.websocket.webSocketSession
+import io.ktor.client.features.websocket.ws
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
 import kotlinx.coroutines.GlobalScope
@@ -38,10 +38,7 @@ data class RequestData(
 )
 
 @Serializable
-data class ResponseData(
-    // Heartbeat
-    val app: String? = null,
-    val id: String? = null,
+data class NestedData(
     // EditorState
     val source: String? = null,
     val cursor: Int? = null,
@@ -49,6 +46,22 @@ data class ResponseData(
     val files: List<String>? = null,
     var roots: List<String>? = null,
     var tabs: List<String>? = null
+)
+
+@Serializable
+data class CallbackData(
+    val message: String? = null,
+    val data: NestedData? = null
+)
+
+@Serializable
+data class ResponseData(
+    // Heartbeat
+    val app: String? = null,
+    val id: String? = null,
+    // Callback
+    val callback: String? = null,
+    val data: CallbackData? = null
 )
 
 @Serializable
@@ -88,28 +101,30 @@ class MyProjectManagerListener(private val project: Project) : ToolWindowManager
                 install(WebSockets)
             }
 
-            webSocketSession = client.webSocketSession(
+            client.ws(
                 host = "localhost",
                 port = 17373,
                 path = "/"
-            )
+            ) {
+                webSocketSession = this
 
-            // Send text frame of heartbeat
-            webSocketSession!!.send(Frame.Text(json.stringify(
-                Response.serializer(),
-                Response(
-                    "heartbeat",
-                    ResponseData(
-                        "/users/cheng/.gradle/caches/modules-2/files-2.1/com.jetbrains/jbre/jbr-11_0_7-osx-x64-b944.20/jbr/contents/home/bin/java",
-                        id
+                // Send text frame of heartbeat
+                send(Frame.Text(json.stringify(
+                    Response.serializer(),
+                    Response(
+                        "heartbeat",
+                        ResponseData(
+                            "/users/cheng/.gradle/caches/modules-2/files-2.1/com.jetbrains/jbre/jbr-11_0_7-osx-x64-b944.20/jbr/contents/home/bin/java",
+                            id
+                        )
                     )
-                )
-            )))
+                )))
 
-            // Receive frames
-            webSocketSession!!.incoming.consumeEach { frame ->
-                if (frame is Frame.Text) {
-                    onMessage(frame)
+                // Receive frames
+                incoming.consumeEach { frame ->
+                    if (frame is Frame.Text) {
+                        onMessage(frame)
+                    }
                 }
             }
         }
@@ -122,40 +137,50 @@ class MyProjectManagerListener(private val project: Project) : ToolWindowManager
         webSocketSession?.send(Frame.Text(json.stringify(
             Response.serializer(),
             Response("callback", ResponseData(
-                null,
-                null,
-                source,
-                0,
-                "",
-                emptyList(),
-                emptyList(),
-                emptyList()
+                null, null,
+                callback,
+                CallbackData(
+                    "editorState",
+                    NestedData(
+                        source,
+                        0,
+                        "",
+                        emptyList(),
+                        emptyList(),
+                        emptyList()
+                    )
+                )
             ))
         )))
     }
 
     private suspend fun onMessage(frame: Frame.Text) {
-        val request = json.parse(Request.serializer(), frame.readText())
+        try {
+            val request = json.parse(Request.serializer(), frame.readText())
 
-        // might not be "response"
-        notify(request.message)
-//        notify(request.data.toString())
+            // might not be "response"
+            notify(request.message)
+//            notify(request.data.toString())
 
-        val callback = request.data.callback
+            val callback = request.data.callback
 
-        if (callback !== null) {
-            request.data.response?.execute?.commandsList?.let {
-                notify(it.toString())
-                for (command in it) {
-                    for (value in command.values) {
-                        notify(value)
+            if (callback !== null) {
+                request.data.response?.execute?.commandsList?.let {
+                    notify(it.toString())
+                    for (command in it) {
+                        for (value in command.values) {
+                            notify(value)
 
-                        if (value == "COMMAND_TYPE_GET_EDITOR_STATE") {
-                            sendEditorState(callback)
+                            if (value == "COMMAND_TYPE_GET_EDITOR_STATE") {
+                                sendEditorState(callback)
+                            }
                         }
                     }
                 }
             }
+        }
+        catch (e: Exception) {
+            notify("Failed to parse " + frame.readText())
         }
     }
 }
