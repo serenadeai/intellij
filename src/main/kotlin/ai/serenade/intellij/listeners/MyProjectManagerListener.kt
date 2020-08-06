@@ -153,7 +153,7 @@ class MyProjectManagerListener(private val project: Project) : ToolWindowManager
     private fun diff(command: Command) {
         val write: () -> Unit = {
             command.source?.let { editor?.document?.replaceString(0, editor.document.textLength, it) }
-            val cursor = command.cursor?: 0
+            val cursor = command.cursor ?: 0
             editor?.caretModel?.moveToOffset(cursor)
         }
         WriteCommandAction.runWriteCommandAction(project, write)
@@ -212,7 +212,7 @@ class MyProjectManagerListener(private val project: Project) : ToolWindowManager
                     for (command in it) {
                         notify(command.type)
 
-                        when(command.type) {
+                        when (command.type) {
                             "COMMAND_TYPE_GET_EDITOR_STATE" -> {
                                 sendEditorState(callback)
                             }
@@ -226,8 +226,7 @@ class MyProjectManagerListener(private val project: Project) : ToolWindowManager
                     }
                 }
             }
-        }
-        catch (e: Exception) {
+        } catch (e: Exception) {
             notify("Failed to parse or execute" + frame.readText())
             notify(e.toString())
         }
