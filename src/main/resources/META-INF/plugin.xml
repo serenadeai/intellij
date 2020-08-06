@@ -9,15 +9,13 @@
     <depends>com.intellij.modules.java</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="ai.serenade.intellij.services.MyApplicationService"/>
         <projectService serviceImplementation="ai.serenade.intellij.services.MyProjectService"/>
-
-        <toolWindow id="My Sample Tool Window" anchor="right" factoryClass="ai.serenade.intellij.MainToolWindow"/>
+        <toolWindow id="serenade" anchor="right" factoryClass="ai.serenade.intellij.MainToolWindow"/>
     </extensions>
 
-    <projectListeners>
+    <applicationListeners>
         <listener class="ai.serenade.intellij.listeners.MyProjectManagerListener"
-                  topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"/>
-    </projectListeners>
+                  topic="com.intellij.openapi.project.ProjectManagerListener"/>
+    </applicationListeners>
 
 </idea-plugin>
