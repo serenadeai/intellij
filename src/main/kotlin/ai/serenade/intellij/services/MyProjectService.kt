@@ -8,6 +8,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
 import com.intellij.openapi.project.Project
 import io.ktor.client.HttpClient
 import io.ktor.client.features.websocket.DefaultClientWebSocketSession
@@ -25,6 +26,9 @@ import kotlinx.serialization.json.JsonConfiguration
 
 @kotlinx.serialization.UnstableDefault
 class MyProjectService {
+    // app name for the client
+    private val appName = "intellij"
+
     private var project: Project? = null
 
     private val json = Json(JsonConfiguration.Default.copy(
@@ -70,11 +74,13 @@ class MyProjectService {
                     Response(
                         "heartbeat",
                         ResponseData(
-                            "/users/cheng/.gradle/caches/modules-2/files-2.1/com.jetbrains/jbre/jbr-11_0_7-osx-x64-b944.20/jbr/contents/home/bin/java",
+                            appName,
                             UUID.randomUUID().toString()
                         )
                     )
                 )))
+
+                notify("Connected")
 
                 // Receive frames
                 incoming.consumeEach { frame ->
@@ -85,6 +91,14 @@ class MyProjectService {
                 }
             }
         }
+    }
+
+    private fun closeTab() {
+        val read: () -> Unit = read@{
+            val manager = FileEditorManagerEx.getInstanceEx(project!!)
+            manager.currentFile?.let { manager.closeFile(it) }
+        }
+        ApplicationManager.getApplication().invokeLater(read)
     }
 
     private fun diff(command: Command) {
@@ -166,6 +180,9 @@ class MyProjectService {
                             }
                             "COMMAND_TYPE_DIFF" -> {
                                 diff(command)
+                            }
+                            "COMMAND_TYPE_CLOSE_TAB" -> {
+                                closeTab()
                             }
                             else -> {
                                 notify("Command type not implemented: " + command.type)
