@@ -9,7 +9,7 @@
     <depends>com.intellij.modules.java</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <projectService serviceImplementation="ai.serenade.intellij.services.MyProjectService"/>
+        <projectService serviceImplementation="ai.serenade.intellij.services.IpcService"/>
         <toolWindow id="serenade" anchor="right" factoryClass="ai.serenade.intellij.MainToolWindow"/>
     </extensions>
 
