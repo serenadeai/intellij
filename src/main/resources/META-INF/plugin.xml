@@ -10,7 +10,7 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <projectService serviceImplementation="ai.serenade.intellij.services.IpcService"/>
-        <toolWindow id="serenade" anchor="right" factoryClass="ai.serenade.intellij.MainToolWindow"/>
+        <toolWindow id="Serenade" anchor="right" factoryClass="ai.serenade.intellij.MainToolWindow"/>
     </extensions>
 
     <applicationListeners>
@@ -18,4 +18,8 @@
                   topic="com.intellij.openapi.project.ProjectManagerListener"/>
     </applicationListeners>
 
+    <projectListeners>
+        <listener class="ai.serenade.intellij.listeners.MyToolWindowListener"
+                  topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"/>
+    </projectListeners>
 </idea-plugin>
