@@ -8,6 +8,7 @@ import io.ktor.client.features.websocket.ws
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
 import io.ktor.util.KtorExperimentalAPI
+import java.net.ConnectException
 import java.util.UUID
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -15,7 +16,6 @@ import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
-import java.net.ConnectException
 
 @ExperimentalCoroutinesApi
 @kotlinx.serialization.UnstableDefault

@@ -3,7 +3,6 @@ package ai.serenade.intellij.services
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
-import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
 import com.intellij.openapi.project.Project
 import io.ktor.client.features.websocket.DefaultClientWebSocketSession
@@ -13,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 
+@kotlinx.serialization.UnstableDefault
 class CommandHandler(private val project: Project) {
     private val notifier = Notifier(project)
 
@@ -32,7 +32,8 @@ class CommandHandler(private val project: Project) {
 
     fun diff(command: Command) {
         val write: () -> Unit = write@{
-            val editor = FileEditorManager.getInstance(project).selectedTextEditor
+            val manager = FileEditorManagerEx.getInstanceEx(project)
+            val editor = manager.selectedTextEditor
             if (editor == null) {
                 notifier.notify("no selected text editor")
                 return@write
@@ -88,4 +89,3 @@ class CommandHandler(private val project: Project) {
         ApplicationManager.getApplication().invokeLater(read)
     }
 }
-
