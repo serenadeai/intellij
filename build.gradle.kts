@@ -68,12 +68,17 @@ intellij {
 detekt {
     config = files("./detekt-config.yml")
     buildUponDefaultConfig = true
+    ignoreFailures = true
 
     reports {
         html.enabled = false
         xml.enabled = false
         txt.enabled = false
     }
+}
+
+ktlint {
+    disabledRules.set(setOf("import-ordering"))
 }
 
 tasks {
@@ -98,16 +103,20 @@ tasks {
         untilBuild(pluginUntilBuild)
 
         // Extract the <!-- Plugin description --> section from README.md and provide for the plugin's manifest
-        pluginDescription(closure {
-            File("./README.md").readText().lines().run {
-                subList(indexOf("<!-- Plugin description -->") + 1, indexOf("<!-- Plugin description end -->"))
-            }.joinToString("\n").run { markdownToHTML(this) }
-        })
+        pluginDescription(
+            closure {
+                File("./README.md").readText().lines().run {
+                    subList(indexOf("<!-- Plugin description -->") + 1, indexOf("<!-- Plugin description end -->"))
+                }.joinToString("\n").run { markdownToHTML(this) }
+            }
+        )
 
         // Get the latest available change notes from the changelog file
-        changeNotes(closure {
-            changelog.getLatest().toHTML()
-        })
+        changeNotes(
+            closure {
+                changelog.getLatest().toHTML()
+            }
+        )
     }
 
     publishPlugin {

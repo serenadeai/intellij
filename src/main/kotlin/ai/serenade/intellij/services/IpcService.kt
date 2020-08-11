@@ -8,14 +8,14 @@ import io.ktor.client.features.websocket.ws
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
 import io.ktor.util.KtorExperimentalAPI
-import java.net.ConnectException
-import java.util.UUID
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
+import java.net.ConnectException
+import java.util.UUID
 
 @ExperimentalCoroutinesApi
 @kotlinx.serialization.UnstableDefault
@@ -31,11 +31,13 @@ class IpcService(private val project: Project) {
     }
     private var webSocketSession: DefaultClientWebSocketSession? = null
 
-    private val json = Json(JsonConfiguration.Default.copy(
-        encodeDefaults = false, // don't include all the null values
-        ignoreUnknownKeys = true, // don't break on parsing unknown responses
-        isLenient = true // empty strings
-    ))
+    private val json = Json(
+        JsonConfiguration.Default.copy(
+            encodeDefaults = false, // don't include all the null values
+            ignoreUnknownKeys = true, // don't break on parsing unknown responses
+            isLenient = true // empty strings
+        )
+    )
 
     fun start() {
         notifier.notify("id: $project.name")
@@ -60,16 +62,20 @@ class IpcService(private val project: Project) {
             webSocketSession = this
 
             // Send text frame of heartbeat
-            send(Frame.Text(json.stringify(
-                Response.serializer(),
-                Response(
-                    "heartbeat",
-                    ResponseData(
-                        appName,
-                        UUID.randomUUID().toString()
+            send(
+                Frame.Text(
+                    json.stringify(
+                        Response.serializer(),
+                        Response(
+                            "heartbeat",
+                            ResponseData(
+                                appName,
+                                UUID.randomUUID().toString()
+                            )
+                        )
                     )
                 )
-            )))
+            )
 
             notifier.notify("Connected")
 

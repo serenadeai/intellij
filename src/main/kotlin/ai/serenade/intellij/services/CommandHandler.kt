@@ -16,11 +16,13 @@ import kotlinx.serialization.json.JsonConfiguration
 class CommandHandler(private val project: Project) {
     private val notifier = Notifier(project)
 
-    private val json = Json(JsonConfiguration.Default.copy(
-        encodeDefaults = false, // don't include all the null values
-        ignoreUnknownKeys = true, // don't break on parsing unknown responses
-        isLenient = true // empty strings
-    ))
+    private val json = Json(
+        JsonConfiguration.Default.copy(
+            encodeDefaults = false, // don't include all the null values
+            ignoreUnknownKeys = true, // don't break on parsing unknown responses
+            isLenient = true // empty strings
+        )
+    )
 
     fun closeTab() {
         val read: () -> Unit = read@{
@@ -62,24 +64,29 @@ class CommandHandler(private val project: Project) {
             val roots: List<String> = listOf(project.basePath ?: "")
             val tabs: List<String> = manager.currentWindow.files.map { it.name }
 
-            val frame = Frame.Text(json.stringify(
-                Response.serializer(),
-                Response("callback", ResponseData(
-                    null, null,
-                    callback,
-                    CallbackData(
-                        "editorState",
-                        NestedData(
-                            source,
-                            cursor,
-                            filename,
-                            files,
-                            roots,
-                            tabs
+            val frame = Frame.Text(
+                json.stringify(
+                    Response.serializer(),
+                    Response(
+                        "callback",
+                        ResponseData(
+                            null, null,
+                            callback,
+                            CallbackData(
+                                "editorState",
+                                NestedData(
+                                    source,
+                                    cursor,
+                                    filename,
+                                    files,
+                                    roots,
+                                    tabs
+                                )
+                            )
                         )
                     )
-                ))
-            ))
+                )
+            )
 
             GlobalScope.launch {
                 webSocketSession.send(frame)
