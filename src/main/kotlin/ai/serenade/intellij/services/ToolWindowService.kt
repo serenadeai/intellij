@@ -68,8 +68,8 @@ class ToolWindowService(private val project: Project) {
             "", false
         )
         val set: () -> Unit = set@{
-            window?.contentManager?.removeAllContents(true)
-            window?.contentManager?.addContent(content)
+            window.contentManager.removeAllContents(true)
+            window.contentManager.addContent(content)
         }
         ApplicationManager.getApplication().invokeLater(set)
     }
