@@ -8,6 +8,9 @@ import io.ktor.client.features.websocket.ws
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
@@ -27,6 +30,8 @@ class IpcService(private val project: Project) {
         install(WebSockets)
     }
     var webSocketSession: DefaultClientWebSocketSession? = null
+    private var heartbeatScope: Job? = null
+    private var id: String = UUID.randomUUID().toString()
 
     private val json = Json(
         JsonConfiguration.Default.copy(
@@ -40,17 +45,22 @@ class IpcService(private val project: Project) {
         GlobalScope.launch {
             try {
                 connect()
+                // wait for the session to be closed by the client in another
+                // coroutine
                 GlobalScope.launch {
                     webSocketSession?.closeReason?.await()
                     notifier.notify("Disconnected")
+                    heartbeatScope?.cancel()
                     toolWindow.setContent(false)
                     webSocketSession = null
                 }
             } catch (e: ConnectException) {
                 notifier.notify("Could not connect")
+                heartbeatScope?.cancel()
                 toolWindow.setContent(false)
             } catch (e: Exception) {
                 notifier.notify("Could not connect: $e")
+                heartbeatScope?.cancel()
                 toolWindow.setContent(false)
             }
         }
@@ -64,23 +74,14 @@ class IpcService(private val project: Project) {
                 path = "/"
             ) {
                 webSocketSession = this
-
-                // Send text frame of heartbeat
-                send(
-                    Frame.Text(
-                        json.stringify(
-                            Response.serializer(),
-                            Response(
-                                "heartbeat",
-                                ResponseData(
-                                    appName,
-                                    UUID.randomUUID().toString()
-                                )
-                            )
-                        )
-                    )
-                )
-
+                // send a heartbeat in a separate coroutine
+                id = UUID.randomUUID().toString()
+                heartbeatScope = GlobalScope.launch {
+                    while (isActive) {
+                        sendHeartbeat()
+                        delay(60 * 1000)
+                    }
+                }
                 notifier.notify("Connected")
                 toolWindow.setContent(true)
 
@@ -92,6 +93,24 @@ class IpcService(private val project: Project) {
                 }
             }
         }
+    }
+
+    private suspend fun sendHeartbeat() {
+        // Send text frame of heartbeat
+        webSocketSession?.send(
+            Frame.Text(
+                json.stringify(
+                    Response.serializer(),
+                    Response(
+                        "heartbeat",
+                        ResponseData(
+                            appName,
+                            id
+                        )
+                    )
+                )
+            )
+        )
     }
 
     private fun onMessage(frame: Frame.Text) {
