@@ -10,19 +10,11 @@ import io.ktor.http.cio.websocket.Frame
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonConfiguration
 
-@kotlinx.serialization.UnstableDefault
 class CommandHandler(private val project: Project) {
     private val notifier = Notifier(project)
 
-    private val json = Json(
-        JsonConfiguration.Default.copy(
-            encodeDefaults = false, // don't include all the null values
-            ignoreUnknownKeys = true, // don't break on parsing unknown responses
-            isLenient = true // empty strings
-        )
-    )
+    private val json = Json(jsonConfiguration)
 
     fun closeTab() {
         val read: () -> Unit = read@{

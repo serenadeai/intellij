@@ -13,12 +13,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonConfiguration
 import java.net.ConnectException
 import java.util.UUID
 
 @io.ktor.util.KtorExperimentalAPI
-@kotlinx.serialization.UnstableDefault
 class IpcService(private val project: Project) {
     // app name for the client
     private val appName = "intellij"
@@ -33,13 +31,7 @@ class IpcService(private val project: Project) {
     private var heartbeatScope: Job? = null
     private var id: String = UUID.randomUUID().toString()
 
-    private val json = Json(
-        JsonConfiguration.Default.copy(
-            encodeDefaults = false, // don't include all the null values
-            ignoreUnknownKeys = true, // don't break on parsing unknown responses
-            isLenient = true // empty strings
-        )
-    )
+    private val json = Json(jsonConfiguration)
 
     fun start() {
         GlobalScope.launch {

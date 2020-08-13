@@ -1,6 +1,7 @@
 package ai.serenade.intellij.services
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonConfiguration
 
 // From client app
 @Serializable
@@ -71,4 +72,10 @@ data class NestedData(
     val files: List<String>? = null,
     var roots: List<String>? = null,
     var tabs: List<String>? = null
+)
+
+val jsonConfiguration = JsonConfiguration.Stable.copy(
+    encodeDefaults = false, // don't include all the null values
+    ignoreUnknownKeys = true, // don't break on parsing unknown responses
+    isLenient = true // empty strings
 )
