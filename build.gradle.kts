@@ -32,7 +32,7 @@ val platformDownloadSources: String by project
 
 group = pluginGroup
 version = pluginVersion
-val ktor_version = "1.3.2"
+val ktorVersion = "1.3.2"
 
 // Configure project's dependencies
 repositories {
@@ -42,10 +42,10 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.10.0")
-    implementation("io.ktor:ktor-client-websockets:$ktor_version")
-    implementation("io.ktor:ktor-client-cio:$ktor_version")
-    implementation("io.ktor:ktor-client-js:$ktor_version")
-    implementation("io.ktor:ktor-client-okhttp:$ktor_version")
+    implementation("io.ktor:ktor-client-websockets:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    implementation("io.ktor:ktor-client-js:$ktorVersion")
+    implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0")
 }
 
