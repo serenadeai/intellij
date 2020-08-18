@@ -75,12 +75,19 @@ class CommandHandler(private val project: Project) {
                     invokeWrite(callback, remainingCommands) { select(command) }
                 }
                 "COMMAND_TYPE_SWITCH_TAB" -> {
-                    invokeRead(callback, remainingCommands) { switchTab(command) }
+                    if (command.index != null) {
+                        invokeRead(callback, remainingCommands) { switchTab(command.index - 1) }
+                    }
                 }
                 "COMMAND_TYPE_UNDO" -> {
                 }
                 else -> {
-                    notifier.notify("Command type not implemented: " + command.type)
+                    /*
+                     * Not supported (client runs):
+                     * - COMMAND_TYPE_PRESS
+                     * - ...
+                     */
+//                    notifier.notify("Command type not implemented: " + command.type)
                     runCommandsInQueue(callback, remainingCommands, data)
                 }
             }
@@ -143,6 +150,7 @@ class CommandHandler(private val project: Project) {
         val manager = FileEditorManagerEx.getInstanceEx(project)
         val window = manager.currentWindow
         var index = 0
+        // find the current tab index and shift
         for (i in 0 until window.tabCount) {
             val editor = window.editors[i]
             if (editor == window.selectedEditor) {
@@ -150,32 +158,23 @@ class CommandHandler(private val project: Project) {
             }
         }
         index += direction
-        // catch over/underflow
-        if (index < 0) {
-            index = window.editors.size - 1
-        }
-        if (index >= window.editors.size) {
-            index = 0
-        }
-        // switch tab
-        window.setSelectedEditor(window.editors[index], true)
-
-        return null
+        // switch tab will catch over/underflow
+        return switchTab(index)
     }
 
-    private fun switchTab(command: Command): CallbackData? {
-        if (command.index != null) {
-            val manager = FileEditorManagerEx.getInstanceEx(project)
-            val window = manager.currentWindow
-            // catch underflow
-            var index = command.index - 1
-            if (index < 0) {
-                index = window.editors.size - 1
-            }
-            // switch tab
-            window.setSelectedEditor(window.editors[index], true)
+    private fun switchTab(index: Int): CallbackData? {
+        val manager = FileEditorManagerEx.getInstanceEx(project)
+        val window = manager.currentWindow
+        // catch over/underflow
+        var newIndex = index
+        if (index < 0) {
+            newIndex = window.editors.size - 1
         }
-
+        if (index >= window.editors.size) {
+            newIndex = 0
+        }
+        // switch tab
+        window.setSelectedEditor(window.editors[newIndex], true)
         return null
     }
 
@@ -195,7 +194,6 @@ class CommandHandler(private val project: Project) {
                 column = 0
             }
         }
-
         return LogicalPosition(row, column)
     }
 
