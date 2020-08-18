@@ -18,8 +18,6 @@ import java.util.UUID
 
 @io.ktor.util.KtorExperimentalAPI
 class IpcService(private val project: Project) {
-    // app name for the client
-    private val appName = "intellij"
     private var notifier: Notifier = Notifier(project)
     private var commandHandler: CommandHandler = CommandHandler(project)
     private var toolWindow = ToolWindowService(project)
@@ -27,33 +25,36 @@ class IpcService(private val project: Project) {
     private val client = HttpClient {
         install(WebSockets)
     }
+    private val json = Json(jsonConfiguration)
+    // app name for the client
+    private val appName = "intellij"
+    private var id: String = UUID.randomUUID().toString()
     var webSocketSession: DefaultClientWebSocketSession? = null
     private var heartbeatScope: Job? = null
-    private var id: String = UUID.randomUUID().toString()
-
-    private val json = Json(jsonConfiguration)
 
     fun start() {
-        GlobalScope.launch {
-            try {
-                connect()
-                // wait for the session to be closed by the client in another
-                // coroutine
-                GlobalScope.launch {
-                    webSocketSession?.closeReason?.await()
-                    notifier.notify("Disconnected")
+        if (webSocketSession == null) {
+            GlobalScope.launch {
+                try {
+                    connect()
+                    // wait for the session to be closed by the client in another
+                    // coroutine
+                    GlobalScope.launch {
+                        webSocketSession?.closeReason?.await()
+                        notifier.notify("Disconnected")
+                        heartbeatScope?.cancel()
+                        toolWindow.setContent(false)
+                        webSocketSession = null
+                    }
+                } catch (e: ConnectException) {
+                    notifier.notify("Could not connect")
                     heartbeatScope?.cancel()
                     toolWindow.setContent(false)
-                    webSocketSession = null
+                } catch (e: Exception) {
+                    notifier.notify("Could not connect: $e")
+                    heartbeatScope?.cancel()
+                    toolWindow.setContent(false)
                 }
-            } catch (e: ConnectException) {
-                notifier.notify("Could not connect")
-                heartbeatScope?.cancel()
-                toolWindow.setContent(false)
-            } catch (e: Exception) {
-                notifier.notify("Could not connect: $e")
-                heartbeatScope?.cancel()
-                toolWindow.setContent(false)
             }
         }
     }
@@ -66,6 +67,7 @@ class IpcService(private val project: Project) {
                 path = "/"
             ) {
                 webSocketSession = this
+
                 // send a heartbeat in a separate coroutine
                 id = UUID.randomUUID().toString()
                 heartbeatScope = GlobalScope.launch {
@@ -77,7 +79,7 @@ class IpcService(private val project: Project) {
                 notifier.notify("Connected")
                 toolWindow.setContent(true)
 
-                // Receive frames
+                // receive frames
                 for (frame in incoming) {
                     if (frame is Frame.Text) {
                         onMessage(frame)
@@ -108,33 +110,12 @@ class IpcService(private val project: Project) {
     private fun onMessage(frame: Frame.Text) {
         try {
             val request = json.parse(Request.serializer(), frame.readText())
-//            notify(request.message)
-
-            val callback = request.data.callback
-            if (callback !== null) {
-                request.data.response?.execute?.commandsList?.let {
-//                    notify(it.toString())
-                    for (command in it) {
-//                        notify(command.type)
-                        when (command.type) {
-                            "COMMAND_TYPE_GET_EDITOR_STATE" -> {
-                                commandHandler.sendEditorState(callback, webSocketSession!!)
-                            }
-                            "COMMAND_TYPE_DIFF" -> {
-                                commandHandler.diff(command)
-                            }
-                            "COMMAND_TYPE_CLOSE_TAB" -> {
-                                commandHandler.closeTab()
-                            }
-                            else -> {
-                                notifier.notify("Command type not implemented: " + command.type)
-                            }
-                        }
-                    }
-                }
+            if (request.message == "response") {
+                // executes commands and sends callback via webSocketSession
+                commandHandler.handle(request.data, webSocketSession!!)
             }
         } catch (e: Exception) {
-            notifier.notify("Failed to parse or execute" + frame.readText())
+            notifier.notify("Failed to parse or execute: " + frame.readText())
             notifier.notify(e.toString())
         }
     }
