@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 import java.nio.file.Files
-import java.nio.file.Path
+import java.nio.file.Paths
 
 @Serializable
 data class SettingsFile(
@@ -12,14 +12,14 @@ data class SettingsFile(
 )
 
 class Settings {
-    private val fileName = Path.of(
+    private val fileName = Paths.get(
         System.getProperty("user.home"),
         ".serenade",
         "serenade.json"
     )
 
     private var settingsFile: String = try {
-        Files.readString(fileName)
+        Files.readAllLines(fileName).joinToString(separator = "\n")
     } catch (e: Exception) {
         "{}"
     }
