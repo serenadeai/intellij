@@ -3,7 +3,7 @@ package ai.serenade.intellij.services
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.CaretState
-import com.intellij.openapi.editor.LogicalPosition
+import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
 import com.intellij.openapi.project.Project
@@ -182,21 +182,6 @@ class CommandHandler(private val project: Project) {
      * Editor state
      */
 
-    private fun cursorToLogicalPosition(source: String, cursor: Int): LogicalPosition {
-        // iterate until the given substring index,
-        // incrementing rows and columns as we go
-        var row = 0
-        var column = 0
-        for (i in 0 until cursor) {
-            column++
-            if (source[i] == '\n') {
-                row++
-                column = 0
-            }
-        }
-        return LogicalPosition(row, column)
-    }
-
     private fun diff(command: Command): CallbackData? {
         val manager = FileEditorManagerEx.getInstanceEx(project)
         val editor = manager.selectedTextEditor
@@ -210,10 +195,11 @@ class CommandHandler(private val project: Project) {
             editor.document.replaceString(
                 0, editor.document.textLength, command.source
             )
-            val cursor = cursorToLogicalPosition(command.source, command.cursor)
+            val cursor = editor.offsetToLogicalPosition(command.cursor)
             editor.caretModel.caretsAndSelections = listOf(
-                CaretState(cursor, null, null)
+                CaretState(cursor, cursor, cursor)
             )
+            editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
         }
         return null
     }
@@ -231,16 +217,12 @@ class CommandHandler(private val project: Project) {
             command.cursor != null &&
             command.cursorEnd != null
         ) {
-            val cursor = cursorToLogicalPosition(
-                command.source, command.cursor
-            )
-            val cursorEnd = cursorToLogicalPosition(
-                command.source, command.cursorEnd
-            )
-
+            val cursor = editor.offsetToLogicalPosition(command.cursor)
+            val cursorEnd = editor.offsetToLogicalPosition(command.cursorEnd)
             editor.caretModel.caretsAndSelections = listOf(
                 CaretState(cursor, cursor, cursorEnd)
             )
+            editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
         }
         return null
     }
