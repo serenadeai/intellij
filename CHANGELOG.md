@@ -1,6 +1,6 @@
 <!-- Keep a Changelog guide -> https://keepachangelog.com -->
 
-# intellij Changelog
+# Serenade for IntelliJ Changelog
 
 ## [Unreleased]
 ### Added

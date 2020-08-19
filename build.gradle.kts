@@ -40,6 +40,7 @@ repositories {
     jcenter()
 }
 dependencies {
+    implementation(kotlin("stdlib", org.jetbrains.kotlin.config.KotlinCompilerVersion.VERSION))
     implementation(kotlin("stdlib-jdk8"))
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.10.0")
     implementation("io.ktor:ktor-client-websockets:$ktorVersion")
