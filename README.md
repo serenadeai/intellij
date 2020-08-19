@@ -30,3 +30,8 @@ Serenade for IntelliJ includes editor support and tab management.
 
 1. In IntelliJ IDEA, add the Plugin SDK: https://jetbrains.org/intellij/sdk/docs/basics/getting_started/setting_up_environment.html
 1. `ktlint -F "**/*.kt*"` should find and fix any lint issues.
+
+## Build
+
+1. Update the version number in `gradle.properties`.
+1. `./gradlew build` should create a `build/distributions/serenade-x.x.x.zip` that contains all the dependencies.
