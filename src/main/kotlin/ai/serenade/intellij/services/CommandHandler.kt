@@ -78,6 +78,7 @@ class CommandHandler(private val project: Project) {
                     invokeRead(callback, remainingCommands) { redo() }
                 }
                 "COMMAND_TYPE_SAVE" -> {
+                    invokeRead(callback, remainingCommands) { save() }
                 }
                 "COMMAND_TYPE_SELECT" -> {
                     invokeWrite(callback, remainingCommands) { select(command) }
@@ -366,6 +367,16 @@ class CommandHandler(private val project: Project) {
     /*
      * Actions
      */
+
+    private fun save(): CallbackData? {
+        val manager = FileEditorManagerEx.getInstanceEx(project)
+        val document = manager.selectedTextEditor?.document
+        if (document != null) {
+            val fileDocumentManager = FileDocumentManager.getInstance()
+            fileDocumentManager.saveDocument(document)
+        }
+        return null
+    }
 
     private fun redo(): CallbackData? {
         val manager = FileEditorManagerEx.getInstanceEx(project)
