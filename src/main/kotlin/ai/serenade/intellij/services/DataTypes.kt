@@ -38,7 +38,9 @@ data class Command(
     val source: String? = null,
     val cursor: Int? = null,
     val cursorEnd: Int? = null,
-    val index: Int? = null
+    val index: Int? = null,
+    val text: String? = null,
+    val direction: String? = null
 )
 
 // To client app

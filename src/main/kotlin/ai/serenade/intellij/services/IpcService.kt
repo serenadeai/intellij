@@ -98,8 +98,8 @@ class IpcService(private val project: Project) {
                     Response(
                         "heartbeat",
                         ResponseData(
-                            appName,
-                            id
+                            app = appName,
+                            id = id
                         )
                     )
                 )

@@ -2,16 +2,20 @@ package ai.serenade.intellij.services
 
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.editor.CaretState
 import com.intellij.openapi.editor.ScrollType
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
+import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.Project
 import io.ktor.client.features.websocket.DefaultClientWebSocketSession
 import io.ktor.http.cio.websocket.Frame
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.StringSelection
 
 class CommandHandler(private val project: Project) {
     private val notifier = Notifier(project)
@@ -45,11 +49,13 @@ class CommandHandler(private val project: Project) {
         } else {
             val command = commandsList.first()
             val remainingCommands = commandsList.takeLast(commandsList.size - 1)
+
             when (command.type) {
                 "COMMAND_TYPE_CLOSE_TAB" -> {
                     invokeRead(callback, remainingCommands) { closeTab() }
                 }
                 "COMMAND_TYPE_COPY" -> {
+                    invokeRead(callback, remainingCommands) { copy(command) }
                 }
                 "COMMAND_TYPE_CREATE_TAB" -> {
                 }
@@ -63,11 +69,13 @@ class CommandHandler(private val project: Project) {
                     invokeRead(callback, remainingCommands) { rotateTab(1) }
                 }
                 "COMMAND_TYPE_PASTE" -> {
+                    invokeWrite(callback, remainingCommands) { paste(command) }
                 }
                 "COMMAND_TYPE_PREVIOUS_TAB" -> {
                     invokeRead(callback, remainingCommands) { rotateTab(-1) }
                 }
                 "COMMAND_TYPE_REDO" -> {
+                    invokeRead(callback, remainingCommands) { redo() }
                 }
                 "COMMAND_TYPE_SAVE" -> {
                 }
@@ -80,6 +88,7 @@ class CommandHandler(private val project: Project) {
                     }
                 }
                 "COMMAND_TYPE_UNDO" -> {
+                    invokeRead(callback, remainingCommands) { undo() }
                 }
                 else -> {
                     /*
@@ -101,7 +110,7 @@ class CommandHandler(private val project: Project) {
                     json.stringify(
                         Response.serializer(),
                         Response(
-                            "callback", ResponseData(null, null, callback, data)
+                            "callback", ResponseData(callback = callback, data = data)
                         )
                     )
                 )
@@ -138,6 +147,13 @@ class CommandHandler(private val project: Project) {
     /*
      * Tab management
      */
+
+    private fun newTab(): CallbackData? {
+        val manager = FileEditorManagerEx.getInstanceEx(project)
+        val window = manager.currentWindow
+        // TODO
+        return null
+    }
 
     private fun closeTab(): CallbackData? {
         // close tab
@@ -257,5 +273,113 @@ class CommandHandler(private val project: Project) {
                 tabs
             )
         )
+    }
+
+    /*
+     * Clipboard
+     */
+
+    private fun copy(command: Command): CallbackData? {
+        if (command.text != null) {
+            val manager = FileEditorManagerEx.getInstanceEx(project)
+            val editor = manager.selectedTextEditor
+            if (editor == null) {
+                notifier.notify("no selected text editor")
+                return null
+            }
+            // copy
+            val copyPasteManager = CopyPasteManager.getInstance()
+            copyPasteManager.setContents(StringSelection(command.text))
+        }
+        return null
+    }
+
+    private fun paste(command: Command): CallbackData? {
+        val manager = FileEditorManagerEx.getInstanceEx(project)
+        val editor = manager.selectedTextEditor
+        if (editor == null) {
+            notifier.notify("no selected text editor")
+            return null
+        }
+        // paste
+        val copyPasteManager = CopyPasteManager.getInstance()
+        var text = copyPasteManager.getContents<String>(DataFlavor.stringFlavor)
+            ?: return null
+
+        var insertionPoint = command.cursor ?: 0
+        var updatedCursor = insertionPoint
+        val document = editor.document
+        val source = document.text
+
+        // if we specify a direction, it means that we want to paste as a line, so add a newline
+        if (command.direction != null && !text.endsWith('\n')) {
+            text += '\n'
+        }
+
+        if (command.direction != null || text.endsWith('\n')) {
+            // default to paste below if there's a newline at the end
+            val direction = command.direction ?: "below"
+
+            // for below (the default), move the cursor to the start of the next line
+            if (direction == "below") {
+                while (insertionPoint < source.length) {
+                    if (source[insertionPoint] == '\n') {
+                        insertionPoint++
+                        break
+                    }
+                    insertionPoint++
+                }
+            }
+            // for paste above, go to the start of the current line
+            else if (direction == "above") {
+                // if we're at the end of a line, then move the cursor back one, or else we'll paste below
+                if (source[insertionPoint] == '\n' && insertionPoint > 0) {
+                    insertionPoint--
+                }
+                while (insertionPoint >= 0) {
+                    if (source[insertionPoint] == '\n') {
+                        break
+                    }
+                    insertionPoint--
+                }
+            }
+
+            updatedCursor = insertionPoint
+        }
+
+        // move the cursor to the end of the pasted text
+        updatedCursor += text.length
+        if (text.endsWith('\n')) {
+            updatedCursor--
+        }
+
+        diff(
+            Command(
+                type = "COMMAND_TYPE_DIFF",
+                source = source.substring(0, insertionPoint) + text + source.substring(insertionPoint),
+                cursor = updatedCursor
+            )
+        )
+        return null
+    }
+
+    /*
+     * Actions
+     */
+
+    private fun redo(): CallbackData? {
+        val manager = FileEditorManagerEx.getInstanceEx(project)
+        val fileEditor = manager.selectedEditor
+        val undoManager = UndoManager.getInstance(project)
+        undoManager.redo(fileEditor)
+        return null
+    }
+
+    private fun undo(): CallbackData? {
+        val manager = FileEditorManagerEx.getInstanceEx(project)
+        val fileEditor = manager.selectedEditor
+        val undoManager = UndoManager.getInstance(project)
+        undoManager.undo(fileEditor)
+        return null
     }
 }
