@@ -2,6 +2,10 @@
 
 # Serenade for IntelliJ platform Changelog
 
+## [0.0.2] - 2020-08-25
+### Added
+- Plugin icon
+
 ## [0.0.1] - 2020-08-20
 ### Added
 - Initial scaffold created from [IntelliJ Platform Plugin Template](https://github.com/JetBrains/intellij-platform-plugin-template)
