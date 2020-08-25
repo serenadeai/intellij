@@ -44,9 +44,13 @@ dependencies {
     implementation(kotlin("stdlib-jdk8"))
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.10.0")
     implementation("io.ktor:ktor-client-websockets:$ktorVersion")
-    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion") {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+    }
     implementation("io.ktor:ktor-client-js:$ktorVersion")
-    implementation("io.ktor:ktor-client-okhttp:$ktorVersion")
+    implementation("io.ktor:ktor-client-okhttp:$ktorVersion") {
+        exclude(group = "org.slf4j", module = "slf4j-api")
+    }
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0")
 }
 
