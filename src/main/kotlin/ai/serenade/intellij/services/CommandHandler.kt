@@ -1,5 +1,10 @@
 package ai.serenade.intellij.services
 
+import com.intellij.ide.DataManager
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.command.undo.UndoManager
@@ -58,6 +63,34 @@ class CommandHandler(private val project: Project) {
                     invokeRead(callback, remainingCommands) { copy(command) }
                 }
                 "COMMAND_TYPE_CREATE_TAB" -> {
+                }
+                "COMMAND_TYPE_DEBUGGER_CONTINUE" -> {
+                    invokeAction(callback, remainingCommands, "Resume")
+                }
+                "COMMAND_TYPE_DEBUGGER_INLINE_BREAKPOINT" -> {
+                }
+                "COMMAND_TYPE_DEBUGGER_PAUSE" -> {
+                    invokeAction(callback, remainingCommands, "Pause")
+                }
+                "COMMAND_TYPE_DEBUGGER_SHOW_HOVER" -> {
+                }
+                "COMMAND_TYPE_DEBUGGER_START" -> {
+                    invokeAction(callback, remainingCommands, "Debug")
+                }
+                "COMMAND_TYPE_DEBUGGER_STEP_INTO" -> {
+                    invokeAction(callback, remainingCommands, "StepInto")
+                }
+                "COMMAND_TYPE_DEBUGGER_STEP_OUT" -> {
+                    invokeAction(callback, remainingCommands, "StepOut")
+                }
+                "COMMAND_TYPE_DEBUGGER_STEP_OVER" -> {
+                    invokeAction(callback, remainingCommands, "StepOver")
+                }
+                "COMMAND_TYPE_DEBUGGER_STOP" -> {
+                    invokeAction(callback, remainingCommands, "Stop")
+                }
+                "COMMAND_TYPE_DEBUGGER_TOGGLE_BREAKPOINT" -> {
+                    invokeAction(callback, remainingCommands, "ToggleLineBreakpoint")
                 }
                 "COMMAND_TYPE_DIFF" -> {
                     invokeWrite(callback, remainingCommands) { diff(command) }
@@ -122,6 +155,34 @@ class CommandHandler(private val project: Project) {
     /*
      * Wrappers
      */
+    private fun executeAction(actionName: String) {
+        val action = ActionManager.getInstance().getAction(actionName) ?: return
+        // UiHelper.runAfterGotFocus({ executeAction(editor, cmd, action, context, actionName) })
+        // does this:   IdeFocusManager.findInstance().doWhenFocusSettlesDown(runnable, ModalityState.defaultModalityState())
+        DataManager.getInstance().dataContextFromFocusAsync.onSuccess { context: DataContext? ->
+            if (context != null) {
+                val event = AnActionEvent(
+                    null, context, ActionPlaces.ACTION_SEARCH, action.templatePresentation,
+                    ActionManager.getInstance(), 0
+                )
+                action.beforeActionPerformedUpdate(event)
+                if (event.presentation.isEnabled) {
+                    action.actionPerformed(event)
+                }
+            }
+        }
+    }
+
+    private fun invokeAction(
+        callback: String,
+        remainingCommands: List<Command>,
+        actionName: String
+    ) {
+        invokeRead(callback, remainingCommands) {
+            executeAction(actionName)
+            null
+        }
+    }
 
     // run some read action and then run remaining commands
     private fun invokeRead(
