@@ -15,7 +15,8 @@ class Notifier(private val project: Project) {
 
     fun notify(message: String) {
         val notification = notificationGroup.createNotification(
-            "Serenade: $message", NotificationType.INFORMATION
+            "Serenade: $message",
+            NotificationType.INFORMATION
         )
         Notifications.Bus.notify(notification, project)
     }

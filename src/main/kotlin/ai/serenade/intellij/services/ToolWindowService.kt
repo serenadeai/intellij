@@ -65,7 +65,8 @@ class ToolWindowService(private val project: Project) {
                     }
                 }
             },
-            "", false
+            "",
+            false
         )
         val set: () -> Unit = set@{
             window.contentManager.removeAllContents(true)

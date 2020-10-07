@@ -111,7 +111,8 @@ class CommandHandler(private val project: Project) {
                     json.stringify(
                         Response.serializer(),
                         Response(
-                            "callback", ResponseData(callback = callback, data = data)
+                            "callback",
+                            ResponseData(callback = callback, data = data)
                         )
                     )
                 )
@@ -210,7 +211,9 @@ class CommandHandler(private val project: Project) {
         // set source and cursor
         if (command.source != null && command.cursor != null) {
             editor.document.replaceString(
-                0, editor.document.textLength, command.source
+                0,
+                editor.document.textLength,
+                command.source
             )
             val cursor = editor.offsetToLogicalPosition(command.cursor)
             editor.caretModel.caretsAndSelections = listOf(
