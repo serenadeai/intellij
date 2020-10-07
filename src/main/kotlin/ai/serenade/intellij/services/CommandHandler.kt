@@ -163,8 +163,12 @@ class CommandHandler(private val project: Project) {
         DataManager.getInstance().dataContextFromFocusAsync.onSuccess { context: DataContext? ->
             if (context != null) {
                 val event = AnActionEvent(
-                    null, context, ActionPlaces.ACTION_SEARCH, action.templatePresentation,
-                    ActionManager.getInstance(), 0
+                    null,
+                    context,
+                    ActionPlaces.ACTION_SEARCH,
+                    action.templatePresentation,
+                    ActionManager.getInstance(),
+                    0
                 )
                 action.beforeActionPerformedUpdate(event)
                 if (event.presentation.isEnabled) {
