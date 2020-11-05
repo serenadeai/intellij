@@ -2,6 +2,10 @@
 
 # Serenade for IntelliJ platform Changelog
 
+## [0.0.4] - 2020-11-05
+### Added
+- Support for IntelliJ branch versions 201+ (2020.1+), including latest Android Studio 
+
 ## [0.0.3] - 2020-10-07
 ### Added
 - Support for debugger commands

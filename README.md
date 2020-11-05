@@ -33,7 +33,7 @@ Serenade for IntelliJ includes editor support and tab management.
 ## Manual build
 
 1. Update the version number in `gradle.properties`.
-1. Add version to changelog.
+1. Add version to `CHANGELOG.md`.
 1. `./gradlew build` should create a `build/distributions/serenade-x.x.x.zip` that contains all the dependencies.
 
 ## Auto-build
