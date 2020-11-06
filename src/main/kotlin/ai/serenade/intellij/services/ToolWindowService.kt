@@ -23,13 +23,13 @@ class ToolWindowService(private val project: Project) {
             panel {
                 if (installed) {
                     titledRow("Welcome to Serenade!") {
-                        noteRow("To get started, run the Serenade desktop app alongside IntelliJ.")
+                        noteRow("To get started, run the Serenade app.")
                     }
                     titledRow("Connection Status") {
-                        if (connected)
-                            noteRow("Connected!")
-                        else {
-                            noteRow("Disconnected. Is the Serenade desktop app running?")
+                        if (connected) {
+                            noteRow("Connected!\nThis tool window can be closed.")
+                        } else {
+                            noteRow("Disconnected!\nIs the Serenade desktop app running?")
                             row {
                                 button(
                                     "Reconnect",
@@ -42,7 +42,7 @@ class ToolWindowService(private val project: Project) {
                     }
                 } else {
                     titledRow("Welcome to Serenade!") {
-                        noteRow("To get started, download the Serenade desktop app \nand run it alongside IntelliJ.")
+                        noteRow("To get started, download the Serenade app:")
                         row {
                             button(
                                 "Download app",
