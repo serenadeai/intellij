@@ -214,9 +214,9 @@ class CommandHandler(private val project: Project) {
      */
 
     private fun newTab(): CallbackData? {
-        val manager = FileEditorManagerEx.getInstanceEx(project)
-        val window = manager.currentWindow
-        // TODO
+//        val manager = FileEditorManagerEx.getInstanceEx(project)
+//        val window = manager.currentWindow
+//        TODO
         return null
     }
 

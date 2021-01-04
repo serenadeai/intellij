@@ -21,6 +21,7 @@ const val RECONNECT_TIMEOUT_MS: Long = 3000
 @io.ktor.util.KtorExperimentalAPI
 class IpcService(private val project: Project) {
     private var notifier: Notifier = Notifier(project)
+    private var connectScope: Job? = null
     private var shouldNotify: Boolean = true
     private var commandHandler: CommandHandler = CommandHandler(project)
     private var toolWindow = ToolWindowService(project)
@@ -36,70 +37,74 @@ class IpcService(private val project: Project) {
     private var heartbeatScope: Job? = null
 
     fun start() {
-        if (webSocketSession == null) {
-            GlobalScope.launch {
-                try {
+        // ensure that reconnection loop is only started once
+        if (connectScope == null) {
+            connectScope = GlobalScope.launch {
+                while (true) {
+                    // No-op if connected already
                     connect()
-                    // wait for the session to be closed by the client:
-                    GlobalScope.launch {
-                        webSocketSession?.closeReason?.await()
-                        notifier.notify("Disconnected")
-                        shouldNotify = true
-                        heartbeatScope?.cancel()
-                        toolWindow.setContent(false)
-                        webSocketSession = null
-                        delay(RECONNECT_TIMEOUT_MS)
-                        start()
-                    }
-                } catch (e: ConnectException) {
-                    if (shouldNotify) {
-                        notifier.notify("Could not connect")
-                        shouldNotify = false
-                    }
-                    heartbeatScope?.cancel()
-                    toolWindow.setContent(false)
-                } catch (e: Exception) {
-                    notifier.notify("Could not connect: $e")
-                    heartbeatScope?.cancel()
-                    toolWindow.setContent(false)
-                }
 
-                // Automatically retry after a delay
-                if (webSocketSession == null) {
+                    // Automatically retry after a delay
                     delay(RECONNECT_TIMEOUT_MS)
-                    start()
                 }
             }
         }
     }
 
     private suspend fun connect() {
-        if (webSocketSession == null) {
-            client.ws(
-                host = "localhost",
-                port = 17373,
-                path = "/"
-            ) {
-                webSocketSession = this
+        try {
+            if (webSocketSession == null) {
+                tryConnect()
+            }
+        } catch (e: ConnectException) {
+            if (shouldNotify) {
+                notifier.notify("Could not connect")
+                shouldNotify = false
+            }
+            heartbeatScope?.cancel()
+            toolWindow.setContent(false)
+        } catch (e: Exception) {
+            notifier.notify("Could not connect: $e")
+            heartbeatScope?.cancel()
+            toolWindow.setContent(false)
+        }
+    }
 
-                // send a heartbeat in a separate coroutine
-                id = UUID.randomUUID().toString()
-                heartbeatScope = GlobalScope.launch {
-                    while (isActive) {
-                        sendHeartbeat()
-                        delay(60 * 1000)
-                    }
-                }
-                notifier.notify("Connected")
-                toolWindow.setContent(true)
+    private suspend fun tryConnect() {
+        client.ws(
+            host = "localhost",
+            port = 17373,
+            path = "/"
+        ) {
+            webSocketSession = this
 
-                // receive frames
-                for (frame in incoming) {
-                    if (frame is Frame.Text) {
-                        onMessage(frame)
-                    }
+            // send a heartbeat in a separate coroutine
+            id = UUID.randomUUID().toString()
+            heartbeatScope = GlobalScope.launch {
+                while (isActive) {
+                    sendHeartbeat()
+                    delay(60 * 1000)
                 }
             }
+            notifier.notify("Connected")
+            toolWindow.setContent(true)
+
+            // receive frames
+            for (frame in incoming) {
+                if (frame is Frame.Text) {
+                    onMessage(frame)
+                }
+            }
+        }
+
+        // wait for the session to be closed by the client:
+        GlobalScope.launch {
+            webSocketSession?.closeReason?.await()
+            notifier.notify("Disconnected")
+            shouldNotify = true
+            heartbeatScope?.cancel()
+            toolWindow.setContent(false)
+            webSocketSession = null
         }
     }
 
