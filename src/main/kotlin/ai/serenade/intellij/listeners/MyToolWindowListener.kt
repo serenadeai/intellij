@@ -9,18 +9,16 @@ import com.intellij.openapi.wm.ex.ToolWindowManagerListener
 
 @io.ktor.util.KtorExperimentalAPI
 class MyToolWindowListener(private val project: Project) : ToolWindowManagerListener {
-    override fun toolWindowShown(id: String, toolWindow: ToolWindow) {
-        when (id) {
-            "Serenade" -> {
-                val projectService = project.service<IpcService>()
-                if (projectService.webSocketSession == null) {
-                    projectService.start()
-                }
-
-                ToolWindowService(project).setContent(
-                    projectService.webSocketSession != null
-                )
+    override fun toolWindowShown(toolWindow: ToolWindow) {
+        if (toolWindow.id == "Serenade") {
+            val projectService = project.service<IpcService>()
+            if (projectService.webSocketSession == null) {
+                projectService.start()
             }
+
+            ToolWindowService(project).setContent(
+                projectService.webSocketSession != null
+            )
         }
     }
 }

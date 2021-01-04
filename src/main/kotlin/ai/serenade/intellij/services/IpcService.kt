@@ -16,9 +16,12 @@ import kotlinx.serialization.* // ktlint-disable no-wildcard-imports
 import java.net.ConnectException
 import java.util.UUID
 
+const val RECONNECT_TIMEOUT_MS: Long = 3000
+
 @io.ktor.util.KtorExperimentalAPI
 class IpcService(private val project: Project) {
     private var notifier: Notifier = Notifier(project)
+    private var shouldNotify: Boolean = true
     private var commandHandler: CommandHandler = CommandHandler(project)
     private var toolWindow = ToolWindowService(project)
 
@@ -37,23 +40,34 @@ class IpcService(private val project: Project) {
             GlobalScope.launch {
                 try {
                     connect()
-                    // wait for the session to be closed by the client in another
-                    // coroutine
+                    // wait for the session to be closed by the client:
                     GlobalScope.launch {
                         webSocketSession?.closeReason?.await()
                         notifier.notify("Disconnected")
+                        shouldNotify = true
                         heartbeatScope?.cancel()
                         toolWindow.setContent(false)
                         webSocketSession = null
+                        delay(RECONNECT_TIMEOUT_MS)
+                        start()
                     }
                 } catch (e: ConnectException) {
-                    notifier.notify("Could not connect")
+                    if (shouldNotify) {
+                        notifier.notify("Could not connect")
+                        shouldNotify = false
+                    }
                     heartbeatScope?.cancel()
                     toolWindow.setContent(false)
                 } catch (e: Exception) {
                     notifier.notify("Could not connect: $e")
                     heartbeatScope?.cancel()
                     toolWindow.setContent(false)
+                }
+
+                // Automatically retry after a delay
+                if (webSocketSession == null) {
+                    delay(RECONNECT_TIMEOUT_MS)
+                    start()
                 }
             }
         }

@@ -56,7 +56,6 @@ class ToolWindowService(private val project: Project) {
                                 "Reload plugin",
                                 actionListener = {
                                     MyToolWindowListener(project).toolWindowShown(
-                                        "Serenade",
                                         window
                                     )
                                 }
