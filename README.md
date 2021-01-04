@@ -18,7 +18,7 @@ Serenade for IntelliJ includes editor support and tab management.
 
 ## Prerequisites
 
-1. IntelliJ IDEA 2020.2 (latest)
+1. IntelliJ IDEA 2020.3.1 (latest)
 1. 
     ```
     brew install ktlint
@@ -28,6 +28,16 @@ Serenade for IntelliJ includes editor support and tab management.
 ## Development
 
 1. In IntelliJ IDEA, add the Plugin SDK: https://jetbrains.org/intellij/sdk/docs/basics/getting_started/setting_up_environment.html
+1. In File > Project Structure ... be sure that the right JDKs are selected, from the installed IntelliJ IDEA, and selected everywhere:
+
+   ![](readme/sdk.png)
+
+   ![](readme/sdk2.png)
+
+   ![](readme/project.png)
+
+   ![](readme/modules.png)
+
 1. `ktlint -F "**/*.kt*"` should find and fix any lint issues.
 
 ## Manual build

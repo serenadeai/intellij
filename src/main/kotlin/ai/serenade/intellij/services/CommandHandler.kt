@@ -18,13 +18,12 @@ import io.ktor.client.features.websocket.DefaultClientWebSocketSession
 import io.ktor.http.cio.websocket.Frame
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.* // ktlint-disable no-wildcard-imports
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
 
 class CommandHandler(private val project: Project) {
     private val notifier = Notifier(project)
-    private val json = Json(jsonConfiguration)
     private var webSocketSession: DefaultClientWebSocketSession? = null
 
     fun handle(
@@ -141,8 +140,7 @@ class CommandHandler(private val project: Project) {
         GlobalScope.launch {
             webSocketSession?.send(
                 Frame.Text(
-                    json.stringify(
-                        Response.serializer(),
+                    json.encodeToString(
                         Response(
                             "callback",
                             ResponseData(callback = callback, data = data)

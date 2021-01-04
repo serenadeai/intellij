@@ -1,7 +1,7 @@
 package ai.serenade.intellij.services
 
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonConfiguration
+import kotlinx.serialization.* // ktlint-disable no-wildcard-imports
+import kotlinx.serialization.json.Json
 
 // From client app
 @Serializable
@@ -77,8 +77,8 @@ data class NestedData(
     var tabs: List<String>? = null
 )
 
-val jsonConfiguration = JsonConfiguration.Stable.copy(
-    encodeDefaults = false, // don't include all the null values
-    ignoreUnknownKeys = true, // don't break on parsing unknown responses
+val json = Json {
+    encodeDefaults = false; // don't include all the null values
+    ignoreUnknownKeys = true; // don't break on parsing unknown responses
     isLenient = true // empty strings
-)
+}

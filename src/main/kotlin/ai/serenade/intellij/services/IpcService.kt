@@ -12,7 +12,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.* // ktlint-disable no-wildcard-imports
 import java.net.ConnectException
 import java.util.UUID
 
@@ -25,7 +25,7 @@ class IpcService(private val project: Project) {
     private val client = HttpClient {
         install(WebSockets)
     }
-    private val json = Json(jsonConfiguration)
+
     // app name for the client
     private val appName = "intellij"
     private var id: String = UUID.randomUUID().toString()
@@ -93,8 +93,7 @@ class IpcService(private val project: Project) {
         // Send text frame of heartbeat
         webSocketSession?.send(
             Frame.Text(
-                json.stringify(
-                    Response.serializer(),
+                json.encodeToString(
                     Response(
                         "heartbeat",
                         ResponseData(
@@ -109,7 +108,7 @@ class IpcService(private val project: Project) {
 
     private fun onMessage(frame: Frame.Text) {
         try {
-            val request = json.parse(Request.serializer(), frame.readText())
+            val request = json.decodeFromString<Request>(frame.readText())
             if (request.message == "response") {
                 // executes commands and sends callback via webSocketSession
                 commandHandler.handle(request.data, webSocketSession!!)

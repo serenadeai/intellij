@@ -7,16 +7,16 @@ plugins {
     // Java support
     id("java")
     // Kotlin support
-    id("org.jetbrains.kotlin.jvm") version "1.3.72"
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.3.70"
+    id("org.jetbrains.kotlin.jvm") version "1.4.30-M1"
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.4.30-M1"
     // gradle-intellij-plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin
-    id("org.jetbrains.intellij") version "0.4.21"
+    id("org.jetbrains.intellij") version "0.6.5"
     // gradle-changelog-plugin - read more: https://github.com/JetBrains/gradle-changelog-plugin
-    id("org.jetbrains.changelog") version "0.4.0"
+    id("org.jetbrains.changelog") version "0.6.2"
     // detekt linter - read more: https://detekt.github.io/detekt/kotlindsl.html
     id("io.gitlab.arturbosch.detekt") version "1.10.0"
     // ktlint linter - read more: https://github.com/JLLeitschuh/ktlint-gradle
-    id("org.jlleitschuh.gradle.ktlint") version "9.2.1"
+    id("org.jlleitschuh.gradle.ktlint") version "9.4.1"
 }
 
 // Import variables from gradle.properties file
@@ -32,7 +32,7 @@ val platformDownloadSources: String by project
 
 group = pluginGroup
 version = pluginVersion
-val ktorVersion = "1.3.2"
+val ktorVersion = "1.5.0"
 
 // Configure project's dependencies
 repositories {
@@ -47,11 +47,10 @@ dependencies {
     implementation("io.ktor:ktor-client-cio:$ktorVersion") {
         exclude(group = "org.slf4j", module = "slf4j-api")
     }
-    implementation("io.ktor:ktor-client-js:$ktorVersion")
     implementation("io.ktor:ktor-client-okhttp:$ktorVersion") {
         exclude(group = "org.slf4j", module = "slf4j-api")
     }
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:0.20.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:1.0-M1-1.4.0-rc")
 }
 
 // Configure gradle-intellij-plugin plugin.
