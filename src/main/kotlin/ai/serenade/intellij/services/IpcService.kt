@@ -1,6 +1,7 @@
 package ai.serenade.intellij.services
 
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.wm.ex.WindowManagerEx
 import io.ktor.client.HttpClient
 import io.ktor.client.features.websocket.DefaultClientWebSocketSession
 import io.ktor.client.features.websocket.WebSockets
@@ -13,6 +14,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.* // ktlint-disable no-wildcard-imports
+import java.awt.event.WindowAdapter
+import java.awt.event.WindowEvent
 import java.net.ConnectException
 import java.util.UUID
 
@@ -82,10 +85,21 @@ class IpcService(private val project: Project) {
             id = UUID.randomUUID().toString()
             heartbeatScope = GlobalScope.launch {
                 while (isActive) {
-                    sendHeartbeat()
+                    sendAppStatus("heartbeat")
                     delay(60 * 1000)
                 }
             }
+
+            // listen to focus, and update plugin active state
+            WindowManagerEx.getInstance().getFrame(project)
+                ?.addWindowListener(object : WindowAdapter() {
+                    override fun windowActivated(e: WindowEvent?) {
+                        GlobalScope.launch {
+                            sendAppStatus("active")
+                        }
+                    }
+                })
+
             notifier.notify("Connected")
             toolWindow.setContent(true)
 
@@ -108,13 +122,12 @@ class IpcService(private val project: Project) {
         }
     }
 
-    private suspend fun sendHeartbeat() {
-        // Send text frame of heartbeat
+    private suspend fun sendAppStatus(name: String) {
         webSocketSession?.send(
             Frame.Text(
                 json.encodeToString(
                     Response(
-                        "heartbeat",
+                        name,
                         ResponseData(
                             app = appName,
                             id = id
