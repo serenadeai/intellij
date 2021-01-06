@@ -54,13 +54,15 @@ class IpcService(private val project: Project) {
 
             // listen to focus, and update plugin active state
             WindowManagerEx.getInstance().getFrame(project)
-                ?.addWindowListener(object : WindowAdapter() {
-                    override fun windowActivated(e: WindowEvent?) {
-                        GlobalScope.launch {
-                            sendAppStatus("active")
+                ?.addWindowListener(
+                    object : WindowAdapter() {
+                        override fun windowActivated(e: WindowEvent?) {
+                            GlobalScope.launch {
+                                sendAppStatus("active")
+                            }
                         }
                     }
-                })
+                )
         }
     }
 
