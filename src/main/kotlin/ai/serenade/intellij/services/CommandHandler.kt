@@ -92,7 +92,7 @@ class CommandHandler(private val project: Project) {
                     invokeAction(callback, remainingCommands, "ToggleLineBreakpoint")
                 }
                 "COMMAND_TYPE_DIFF" -> {
-                    invokeWrite(callback, remainingCommands) { diff(command) }
+                    invokeWrite(callback, remainingCommands, "Diff") { diff(command) }
                 }
                 "COMMAND_TYPE_GET_EDITOR_STATE" -> {
                     invokeRead(callback, remainingCommands) { sendEditorState() }
@@ -101,7 +101,7 @@ class CommandHandler(private val project: Project) {
                     invokeRead(callback, remainingCommands) { rotateTab(1) }
                 }
                 "COMMAND_TYPE_PASTE" -> {
-                    invokeWrite(callback, remainingCommands) { paste(command) }
+                    invokeWrite(callback, remainingCommands, "Paste") { paste(command) }
                 }
                 "COMMAND_TYPE_PREVIOUS_TAB" -> {
                     invokeRead(callback, remainingCommands) { rotateTab(-1) }
@@ -113,7 +113,7 @@ class CommandHandler(private val project: Project) {
                     invokeRead(callback, remainingCommands) { save() }
                 }
                 "COMMAND_TYPE_SELECT" -> {
-                    invokeWrite(callback, remainingCommands) { select(command) }
+                    invokeWrite(callback, remainingCommands, "Select") { select(command) }
                 }
                 "COMMAND_TYPE_SWITCH_TAB" -> {
                     if (command.index != null) {
@@ -202,11 +202,14 @@ class CommandHandler(private val project: Project) {
     private fun invokeWrite(
         callback: String,
         remainingCommands: List<Command>,
+        commandName: String,
         write: () -> CallbackData?
     ) {
-        WriteCommandAction.runWriteCommandAction(project) {
-            runCommandsInQueue(callback, remainingCommands, write())
-        }
+        WriteCommandAction.writeCommandAction(project)
+            .withName(commandName)
+            .run<Throwable> {
+                runCommandsInQueue(callback, remainingCommands, write())
+            }
     }
 
     /*
