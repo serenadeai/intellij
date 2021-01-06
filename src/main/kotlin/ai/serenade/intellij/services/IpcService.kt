@@ -51,6 +51,16 @@ class IpcService(private val project: Project) {
                     delay(RECONNECT_TIMEOUT_MS)
                 }
             }
+
+            // listen to focus, and update plugin active state
+            WindowManagerEx.getInstance().getFrame(project)
+                ?.addWindowListener(object : WindowAdapter() {
+                    override fun windowActivated(e: WindowEvent?) {
+                        GlobalScope.launch {
+                            sendAppStatus("active")
+                        }
+                    }
+                })
         }
     }
 
@@ -89,16 +99,6 @@ class IpcService(private val project: Project) {
                     delay(60 * 1000)
                 }
             }
-
-            // listen to focus, and update plugin active state
-            WindowManagerEx.getInstance().getFrame(project)
-                ?.addWindowListener(object : WindowAdapter() {
-                    override fun windowActivated(e: WindowEvent?) {
-                        GlobalScope.launch {
-                            sendAppStatus("active")
-                        }
-                    }
-                })
 
             notifier.notify("Connected")
             toolWindow.setContent(true)
