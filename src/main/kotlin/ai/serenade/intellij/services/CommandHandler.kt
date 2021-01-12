@@ -14,6 +14,7 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.vfs.VfsUtil
 import io.ktor.client.features.websocket.DefaultClientWebSocketSession
 import io.ktor.http.cio.websocket.Frame
 import kotlinx.coroutines.GlobalScope
@@ -21,10 +22,13 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.* // ktlint-disable no-wildcard-imports
 import java.awt.datatransfer.DataFlavor
 import java.awt.datatransfer.StringSelection
+import java.nio.file.Paths
 
 class CommandHandler(private val project: Project) {
     private val notifier = Notifier(project)
     private var webSocketSession: DefaultClientWebSocketSession? = null
+
+    private var openFileList: List<String>? = null
 
     fun handle(
         clientRequest: RequestData,
@@ -99,6 +103,9 @@ class CommandHandler(private val project: Project) {
                 }
                 "COMMAND_TYPE_NEXT_TAB" -> {
                     invokeRead(callback, remainingCommands) { rotateTab(1) }
+                }
+                "COMMAND_TYPE_OPEN_FILE_LIST" -> {
+                    invokeRead(callback, remainingCommands) { setOpenFileList(command) }
                 }
                 "COMMAND_TYPE_PASTE" -> {
                     invokeWrite(callback, remainingCommands, "Paste") { paste(command) }
@@ -328,7 +335,7 @@ class CommandHandler(private val project: Project) {
         val filename = document.let {
             FileDocumentManager.getInstance().getFile(it)?.name
         }
-        val files: List<String> = emptyList() // TODO
+        val files: List<String> = if (openFileList !== null) openFileList!! else listOf()
         val roots: List<String> = listOf(project.basePath ?: "")
         val tabs: List<String> = manager.currentWindow.files.map { it.name }
 
@@ -341,6 +348,24 @@ class CommandHandler(private val project: Project) {
                 files,
                 roots,
                 tabs
+            )
+        )
+    }
+
+    private fun setOpenFileList(command: Command): CallbackData {
+        if (command.path != null) {
+            val pattern = ".*" + command.path.toLowerCase().replace(Regex(" "), ".") + ".*"
+
+            val base = Paths.get(project.basePath!!)
+            val projectDir = VfsUtil.findFile(base, true)!!
+            val matches = VfsUtil.collectChildrenRecursively(projectDir)
+            openFileList = matches.map { it.path }.filter { it.matches(Regex(pattern, RegexOption.IGNORE_CASE)) }
+        }
+
+        return CallbackData(
+            "sendText",
+            NestedData(
+                text = "callback open"
             )
         )
     }

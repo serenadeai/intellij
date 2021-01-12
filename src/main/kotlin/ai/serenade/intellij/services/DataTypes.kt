@@ -40,7 +40,8 @@ data class Command(
     val cursorEnd: Int? = null,
     val index: Int? = null,
     val text: String? = null,
-    val direction: String? = null
+    val direction: String? = null,
+    val path: String? = null
 )
 
 // To client app
@@ -74,7 +75,10 @@ data class NestedData(
     val filename: String? = null,
     val files: List<String>? = null,
     var roots: List<String>? = null,
-    var tabs: List<String>? = null
+    var tabs: List<String>? = null,
+
+    // OPEN_FILE_LIST
+    val text: String? = null,
 )
 
 val json = Json {
