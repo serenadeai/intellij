@@ -14,7 +14,9 @@ import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx
 import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.roots.FileIndexFacade
 import com.intellij.openapi.vfs.VfsUtil
+import com.intellij.openapi.vfs.VirtualFile
 import io.ktor.client.features.websocket.DefaultClientWebSocketSession
 import io.ktor.http.cio.websocket.Frame
 import kotlinx.coroutines.GlobalScope
@@ -373,11 +375,24 @@ class CommandHandler(private val project: Project) {
     private fun setOpenFileList(command: Command): CallbackData {
         if (command.path != null) {
             val pattern = ".*" + command.path.toLowerCase().replace(Regex(" "), ".") + ".*"
-
             val base = Paths.get(project.basePath!!)
             val projectDir = VfsUtil.findFile(base, true)!!
-            val matches = VfsUtil.collectChildrenRecursively(projectDir)
-            openFileList = matches.map { it.path }.filter { it.matches(Regex(pattern, RegexOption.IGNORE_CASE)) }
+            val fileIndex = FileIndexFacade.getInstance(project)
+
+            openFileList = mutableListOf()
+
+            VfsUtil.processFileRecursivelyWithoutIgnored(
+                projectDir
+            ) { file: VirtualFile ->
+                if ((openFileList as MutableList<String>).size < 20 &&
+                    !file.isDirectory &&
+                    !fileIndex.isExcludedFile(file) &&
+                    file.path.matches(Regex(pattern, RegexOption.IGNORE_CASE))
+                ) {
+                    (openFileList as MutableList<String>).add(file.path)
+                }
+                true
+            }
         }
 
         return CallbackData(
