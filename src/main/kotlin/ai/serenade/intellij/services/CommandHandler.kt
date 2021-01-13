@@ -104,6 +104,9 @@ class CommandHandler(private val project: Project) {
                 "COMMAND_TYPE_NEXT_TAB" -> {
                     invokeRead(callback, remainingCommands) { rotateTab(1) }
                 }
+                "COMMAND_TYPE_OPEN_FILE" -> {
+                    invokeRead(callback, remainingCommands) { open(command) }
+                }
                 "COMMAND_TYPE_OPEN_FILE_LIST" -> {
                     invokeRead(callback, remainingCommands) { setOpenFileList(command) }
                 }
@@ -269,6 +272,20 @@ class CommandHandler(private val project: Project) {
         return null
     }
 
+    private fun open(command: Command): CallbackData? {
+        val index = command.index ?: 0
+        if (openFileList != null && openFileList!!.size > index) {
+            val path = Paths.get(openFileList!![index])
+            val virtualFile = VfsUtil.findFile(path, true)
+            if (virtualFile != null) {
+                val manager = FileEditorManagerEx.getInstanceEx(project)
+                manager.openFile(virtualFile, true)
+            }
+        }
+
+        return null
+    }
+
     /*
      * Editor state
      */
@@ -320,24 +337,25 @@ class CommandHandler(private val project: Project) {
         return null
     }
 
-    private fun sendEditorState(): CallbackData? {
+    private fun sendEditorState(): CallbackData {
         val manager = FileEditorManagerEx.getInstanceEx(project)
+        val files: List<String> = openFileList ?: listOf()
+        val roots: List<String> = listOf(project.basePath ?: "")
+        val tabs: List<String> = manager.currentWindow?.files?.map { it.name } ?: listOf()
+
         val editor = manager.selectedTextEditor
-        if (editor == null) {
-            notifier.notify("no selected text editor")
-            return null
-        }
 
         // build editor state data
-        val document = editor.document
-        val source = document.text
-        val cursor = editor.selectionModel.selectionStart
+        val document = editor?.document
+        val source = document?.text ?: ""
+        val cursor = editor?.selectionModel?.selectionStart ?: 0
         val filename = document.let {
-            FileDocumentManager.getInstance().getFile(it)?.name
+            if (it != null) {
+                FileDocumentManager.getInstance().getFile(it)?.name
+            } else {
+                ""
+            }
         }
-        val files: List<String> = if (openFileList !== null) openFileList!! else listOf()
-        val roots: List<String> = listOf(project.basePath ?: "")
-        val tabs: List<String> = manager.currentWindow.files.map { it.name }
 
         return CallbackData(
             "editorState",
