@@ -2,6 +2,13 @@
 
 # Serenade for IntelliJ platform Changelog
 
+## [0.0.5] - 2021-01-14
+### Added
+- Support for IntelliJ branch versions 203+ (2020.3+)
+- Automatic reconnect attempts to desktop client app
+- Switches to active project if multiple projects are open
+- Support for "open [file]" command
+
 ## [0.0.4] - 2020-11-05
 ### Added
 - Support for IntelliJ branch versions 201+ (2020.1+), including latest Android Studio 

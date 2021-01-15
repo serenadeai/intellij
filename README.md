@@ -1,22 +1,16 @@
 # Serenade for IntelliJ
 
 ![Build](https://github.com/serenadeai/intellij/workflows/Build/badge.svg)
-[![Version](https://img.shields.io/jetbrains/plugin/v/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
-
-## Template ToDo list
-- [x] Create a new [IntelliJ Platform Plugin Template][template] project.
-- [x] Verify the [pluginGroup](/gradle.properties), [plugin ID](/src/main/resources/META-INF/plugin.xml) and [sources package](/src/main/kotlin).
-- [x] Review the [Legal Agreements](https://plugins.jetbrains.com/docs/marketplace/legal-agreements.html).
-- [ ] [Publish a plugin manually](https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/publishing_plugin.html) for the first time.
-- [ ] Set the Plugin ID in the above README badges.
-- [ ] Set the [Deployment Token](https://plugins.jetbrains.com/docs/marketplace/plugin-upload.html).
+[![Version](https://img.shields.io/jetbrains/plugin/v/14939-serenade.svg)](https://img.shields.io/jetbrains/plugin/v/14939-serenade.svg)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/14939-serenade.svg)](https://img.shields.io/jetbrains/plugin/d/14939-serenade.svg)
 
 <!-- Plugin description -->
-Serenade for IntelliJ includes editor support and tab management.
+The Serenade for IntelliJ plugin provides editing support and tab management.
 <!-- Plugin description end -->
 
-## Prerequisites
+## Development 
+
+### Prerequisites
 
 1. IntelliJ IDEA 2020.3.1 (latest)
 1. 
@@ -24,9 +18,6 @@ Serenade for IntelliJ includes editor support and tab management.
     brew install ktlint
     ktlint installGitPreCommitHook
     ```
-
-## Development
-
 1. In IntelliJ IDEA, add the Plugin SDK: https://jetbrains.org/intellij/sdk/docs/basics/getting_started/setting_up_environment.html
 1. In File > Project Structure ... be sure that the right JDKs are selected, from the installed IntelliJ IDEA, and selected everywhere:
 
@@ -37,7 +28,6 @@ Serenade for IntelliJ includes editor support and tab management.
    ![](readme/project.png)
 
    ![](readme/modules.png)
-
 1. `ktlint -F "**/*.kt*"` should find and fix any lint issues.
 
 ## Manual build
