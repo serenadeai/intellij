@@ -2,6 +2,10 @@
 
 # Serenade for IntelliJ platform Changelog
 
+## [0.0.6] - 2021-01-24
+### Fixed
+- Dependency conflict preventing connection in Windows
+
 ## [0.0.5] - 2021-01-14
 ### Added
 - Support for IntelliJ branch versions 203+ (2020.3+)
