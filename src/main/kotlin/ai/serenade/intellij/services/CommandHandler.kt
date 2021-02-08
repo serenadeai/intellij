@@ -291,10 +291,12 @@ class CommandHandler(private val project: Project) {
 
         // set source and cursor
         if (command.source != null && command.cursor != null) {
+            // standardize newline endings
+            val source = Regex("\\r\\n").replace(command.source, "\n")
             editor.document.replaceString(
                 0,
                 editor.document.textLength,
-                command.source
+                source
             )
             val cursor = editor.offsetToLogicalPosition(command.cursor)
             editor.caretModel.caretsAndSelections = listOf(
