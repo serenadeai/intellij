@@ -54,6 +54,7 @@ dependencies {
     implementation("io.ktor:ktor-client-okhttp:$ktorVersion") {
         exclude(group = "org.slf4j")
     }
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.1.0")
 }
 
 // Configure gradle-intellij-plugin plugin.
