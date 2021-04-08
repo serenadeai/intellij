@@ -12,7 +12,7 @@ The Serenade for IntelliJ plugin provides editing support and tab management.
 
 ### Prerequisites
 
-1. IntelliJ IDEA 2020.3.1 (latest)
+1. IntelliJ IDEA 2021.1 (latest)
 1. 
     ```
     brew install ktlint
@@ -29,10 +29,13 @@ The Serenade for IntelliJ plugin provides editing support and tab management.
 
    ![](readme/modules.png)
 1. `ktlint -F "**/*.kt*"` should find and fix any lint issues.
+1. Once the project is opened, there should be a panel for running Gradle tasks, and 
 
 ## Manual build
 
-1. Update the version number in `gradle.properties`.
+1. Update `pluginVersion` in `gradle.properties`.
+    - If there has been a major IntelliJ update, update `pluginUntilBuild` and `platformVersion` as well based on the [branch number and platform version](https://plugins.jetbrains.com/docs/intellij/build-number-ranges.html#intellij-platform-based-products-of-recent-ide-versions) of the most recent version.
+   - The build may also fail if some dependencies in `build.gradle.kts` are out of date, so update those version numbers as well.
 1. Add version to `CHANGELOG.md`.
 1. `./gradlew build` should create a `build/distributions/serenade-x.x.x.zip` that contains all the dependencies.
 

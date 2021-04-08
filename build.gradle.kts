@@ -7,12 +7,12 @@ plugins {
     // Java support
     id("java")
     // Kotlin support
-    id("org.jetbrains.kotlin.jvm") version "1.4.30-M1"
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.4.30-M1"
+    id("org.jetbrains.kotlin.jvm") version "1.5.0-M2"
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.5.0-M2"
     // gradle-intellij-plugin - read more: https://github.com/JetBrains/gradle-intellij-plugin
-    id("org.jetbrains.intellij") version "0.6.5"
+    id("org.jetbrains.intellij") version "0.7.2"
     // gradle-changelog-plugin - read more: https://github.com/JetBrains/gradle-changelog-plugin
-    id("org.jetbrains.changelog") version "0.6.2"
+    id("org.jetbrains.changelog") version "1.1.1"
     // detekt linter - read more: https://detekt.github.io/detekt/kotlindsl.html
     id("io.gitlab.arturbosch.detekt") version "1.10.0"
     // ktlint linter - read more: https://github.com/JLLeitschuh/ktlint-gradle
@@ -42,6 +42,7 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib", org.jetbrains.kotlin.config.KotlinCompilerVersion.VERSION))
     implementation(kotlin("stdlib-jdk8"))
+    implementation(kotlin("reflect", "1.5.0-M2"))
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.10.0")
     implementation("io.ktor:ktor-client-websockets:$ktorVersion") {
         exclude(group = "org.slf4j")
@@ -52,7 +53,6 @@ dependencies {
     implementation("io.ktor:ktor-client-okhttp:$ktorVersion") {
         exclude(group = "org.slf4j")
     }
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-runtime:1.0-M1-1.4.0-rc")
 }
 
 // Configure gradle-intellij-plugin plugin.
@@ -111,7 +111,7 @@ tasks {
         // Extract the <!-- Plugin description --> section from README.md and provide for the plugin's manifest
         pluginDescription(
             closure {
-                File("./README.md").readText().lines().run {
+                File("${project.buildDir}/../README.md").readText().lines().run {
                     subList(indexOf("<!-- Plugin description -->") + 1, indexOf("<!-- Plugin description end -->"))
                 }.joinToString("\n").run { markdownToHTML(this) }
             }
