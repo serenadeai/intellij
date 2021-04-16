@@ -29,7 +29,7 @@ The Serenade for IntelliJ plugin provides editing support and tab management.
 
    ![](readme/modules.png)
 1. `ktlint -F "**/*.kt*"` should find and fix any lint issues.
-1. Once the project is opened, there should be a panel for running Gradle tasks, and 
+1. Once the project is opened, there should be a panel for [running Gradle tasks](https://plugins.jetbrains.com/docs/intellij/gradle-prerequisites.html#executing-the-plugin), and use `buildPlugin` and `runIde` for testing.
 
 ## Manual build
 
