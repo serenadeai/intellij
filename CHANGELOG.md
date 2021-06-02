@@ -2,6 +2,10 @@
 
 # Serenade for IntelliJ platform Changelog
 
+## [0.0.8] - 2021-06-02
+### Fixed
+- Slow-down/crash when using Serenade within modals (e.g. preferences window)
+
 ## [0.0.7] - 2021-04-08
 ### Added
 - Updated dependencies to support IntelliJ branch versions 211+ (2021.1+)
