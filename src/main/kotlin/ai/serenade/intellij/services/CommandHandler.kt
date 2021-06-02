@@ -202,9 +202,10 @@ class CommandHandler(private val project: Project) {
         remainingCommands: List<Command>,
         read: () -> CallbackData?
     ) {
-        ApplicationManager.getApplication().invokeLater({
-            runCommandsInQueue(callback, remainingCommands, read())
-        }, ModalityState.any())
+        ApplicationManager.getApplication().invokeLater(
+            { runCommandsInQueue(callback, remainingCommands, read()) },
+            ModalityState.any()
+        )
     }
 
     // run some write action and then run remaining commands
