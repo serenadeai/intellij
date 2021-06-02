@@ -79,7 +79,10 @@ data class NestedData(
 
     // OPEN_FILE_LIST
     val text: String? = null,
-)
+
+    // error state for editor state under modals
+    var error: Boolean? = false,
+    )
 
 val json = Json {
     encodeDefaults = false; // don't include all the null values
