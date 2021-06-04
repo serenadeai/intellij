@@ -7,6 +7,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.editor.CaretState
@@ -36,7 +37,6 @@ class CommandHandler(private val project: Project) {
         clientRequest: RequestData,
         newWebSocketSession: DefaultClientWebSocketSession
     ) {
-//        notifier.notify(clientRequest.message)
         webSocketSession = newWebSocketSession
         val callback = clientRequest.callback
         val commandsList = clientRequest.response?.execute?.commandsList
@@ -101,7 +101,7 @@ class CommandHandler(private val project: Project) {
                     invokeWrite(callback, remainingCommands, "Diff") { diff(command) }
                 }
                 "COMMAND_TYPE_GET_EDITOR_STATE" -> {
-                    invokeRead(callback, remainingCommands) { sendEditorState() }
+                    invokeRead(callback, remainingCommands, ModalityState.any()) { checkModality { sendEditorState() } }
                 }
                 "COMMAND_TYPE_NEXT_TAB" -> {
                     invokeRead(callback, remainingCommands) { rotateTab(1) }
@@ -163,6 +163,15 @@ class CommandHandler(private val project: Project) {
     /*
      * Wrappers
      */
+
+    private fun checkModality(action: () -> CallbackData?): CallbackData? {
+        return if (ModalityState.current() == ModalityState.NON_MODAL) {
+            action()
+        } else {
+            CallbackData("", NestedData(filename = "", error = true))
+        }
+    }
+
     private fun executeAction(actionName: String) {
         val action = ActionManager.getInstance().getAction(actionName) ?: return
         // UiHelper.runAfterGotFocus({ executeAction(editor, cmd, action, context, actionName) })
@@ -200,11 +209,12 @@ class CommandHandler(private val project: Project) {
     private fun invokeRead(
         callback: String,
         remainingCommands: List<Command>,
+        modalityState: ModalityState = ModalityState.defaultModalityState(),
         read: () -> CallbackData?
     ) {
         ApplicationManager.getApplication().invokeLater(
             { runCommandsInQueue(callback, remainingCommands, read()) },
-            ModalityState.any()
+            modalityState
         )
     }
 
@@ -333,40 +343,35 @@ class CommandHandler(private val project: Project) {
     }
 
     private fun sendEditorState(): CallbackData {
-        // Only send the editor state when the editor is focused (i.e. no modals are open)
-        if (ModalityState.current() == ModalityState.NON_MODAL) {
-            val manager = FileEditorManagerEx.getInstanceEx(project)
-            val files: List<String> = openFileList ?: listOf()
-            val roots: List<String> = listOf(project.basePath ?: "")
-            val tabs: List<String> = manager.currentWindow?.files?.map { it.name } ?: listOf()
+        val manager = FileEditorManagerEx.getInstanceEx(project)
+        val files: List<String> = openFileList ?: listOf()
+        val roots: List<String> = listOf(project.basePath ?: "")
+        val tabs: List<String> = manager.currentWindow?.files?.map { it.name } ?: listOf()
 
-            val editor = manager.selectedTextEditor
-            // build editor state data
-            val document = editor?.document
-            val source = document?.text ?: ""
-            val cursor = editor?.selectionModel?.selectionStart ?: 0
-            val filename = document.let {
-                if (it != null) {
-                    FileDocumentManager.getInstance().getFile(it)?.name
-                } else {
-                    ""
-                }
+        val editor = manager.selectedTextEditor
+        // build editor state data
+        val document = editor?.document
+        val source = document?.text ?: ""
+        val cursor = editor?.selectionModel?.selectionStart ?: 0
+        val filename = document.let {
+            if (it != null) {
+                FileDocumentManager.getInstance().getFile(it)?.name
+            } else {
+                ""
             }
-
-            return CallbackData(
-                "editorState",
-                NestedData(
-                    source,
-                    cursor,
-                    filename,
-                    files,
-                    roots,
-                    tabs
-                )
-            )
         }
-        // If a modal is open, send an error to the client to invoke native editor state commands
-        return CallbackData("editorState", NestedData(error = true))
+
+        return CallbackData(
+            "editorState",
+            NestedData(
+                source,
+                cursor,
+                filename,
+                files,
+                roots,
+                tabs
+            )
+        )
     }
 
     private fun setOpenFileList(command: Command): CallbackData {
