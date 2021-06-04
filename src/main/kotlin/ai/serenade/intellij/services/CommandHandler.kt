@@ -441,7 +441,9 @@ class CommandHandler(private val project: Project) {
         val manager = FileEditorManagerEx.getInstanceEx(project)
         val fileEditor = manager.selectedEditor
         val undoManager = UndoManager.getInstance(project)
-        undoManager.redo(fileEditor)
+        if (undoManager.isRedoAvailable(fileEditor)) {
+            undoManager.redo(fileEditor)
+        }
         return null
     }
 
@@ -449,7 +451,9 @@ class CommandHandler(private val project: Project) {
         val manager = FileEditorManagerEx.getInstanceEx(project)
         val fileEditor = manager.selectedEditor
         val undoManager = UndoManager.getInstance(project)
-        undoManager.undo(fileEditor)
+        if (undoManager.isUndoAvailable(fileEditor)) {
+            undoManager.undo(fileEditor)
+        }
         return null
     }
 }
