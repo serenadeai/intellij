@@ -6,6 +6,7 @@ import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.command.undo.UndoManager
 import com.intellij.openapi.editor.CaretState
@@ -35,7 +36,6 @@ class CommandHandler(private val project: Project) {
         clientRequest: RequestData,
         newWebSocketSession: DefaultClientWebSocketSession
     ) {
-//        notifier.notify(clientRequest.message)
         webSocketSession = newWebSocketSession
         val callback = clientRequest.callback
         val commandsList = clientRequest.response?.execute?.commandsList
@@ -100,7 +100,7 @@ class CommandHandler(private val project: Project) {
                     invokeWrite(callback, remainingCommands, "Diff") { diff(command) }
                 }
                 "COMMAND_TYPE_GET_EDITOR_STATE" -> {
-                    invokeRead(callback, remainingCommands) { sendEditorState() }
+                    invokeRead(callback, remainingCommands, ModalityState.any()) { checkModality { sendEditorState() } }
                 }
                 "COMMAND_TYPE_NEXT_TAB" -> {
                     invokeRead(callback, remainingCommands) { rotateTab(1) }
@@ -162,6 +162,15 @@ class CommandHandler(private val project: Project) {
     /*
      * Wrappers
      */
+
+    private fun checkModality(action: () -> CallbackData?): CallbackData? {
+        return if (ModalityState.current() == ModalityState.NON_MODAL) {
+            action()
+        } else {
+            CallbackData("", NestedData(filename = "", error = true))
+        }
+    }
+
     private fun executeAction(actionName: String) {
         val action = ActionManager.getInstance().getAction(actionName) ?: return
         // UiHelper.runAfterGotFocus({ executeAction(editor, cmd, action, context, actionName) })
@@ -199,11 +208,13 @@ class CommandHandler(private val project: Project) {
     private fun invokeRead(
         callback: String,
         remainingCommands: List<Command>,
+        modalityState: ModalityState = ModalityState.defaultModalityState(),
         read: () -> CallbackData?
     ) {
-        ApplicationManager.getApplication().invokeLater {
-            runCommandsInQueue(callback, remainingCommands, read())
-        }
+        ApplicationManager.getApplication().invokeLater(
+            { runCommandsInQueue(callback, remainingCommands, read()) },
+            modalityState
+        )
     }
 
     // run some write action and then run remaining commands
@@ -337,7 +348,6 @@ class CommandHandler(private val project: Project) {
         val tabs: List<String> = manager.currentWindow?.files?.map { it.name } ?: listOf()
 
         val editor = manager.selectedTextEditor
-
         // build editor state data
         val document = editor?.document
         val source = document?.text ?: ""
@@ -431,7 +441,9 @@ class CommandHandler(private val project: Project) {
         val manager = FileEditorManagerEx.getInstanceEx(project)
         val fileEditor = manager.selectedEditor
         val undoManager = UndoManager.getInstance(project)
-        undoManager.redo(fileEditor)
+        if (undoManager.isRedoAvailable(fileEditor)) {
+            undoManager.redo(fileEditor)
+        }
         return null
     }
 
@@ -439,7 +451,9 @@ class CommandHandler(private val project: Project) {
         val manager = FileEditorManagerEx.getInstanceEx(project)
         val fileEditor = manager.selectedEditor
         val undoManager = UndoManager.getInstance(project)
-        undoManager.undo(fileEditor)
+        if (undoManager.isUndoAvailable(fileEditor)) {
+            undoManager.undo(fileEditor)
+        }
         return null
     }
 }
