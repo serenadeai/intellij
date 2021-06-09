@@ -167,7 +167,7 @@ class CommandHandler(private val project: Project) {
         return if (ModalityState.current() == ModalityState.NON_MODAL) {
             action()
         } else {
-            CallbackData("", NestedData(filename = "", error = true))
+            CallbackData("modal", NestedData(filename = "jetbrains-modal", error = true))
         }
     }
 

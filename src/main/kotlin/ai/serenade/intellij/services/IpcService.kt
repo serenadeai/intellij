@@ -34,7 +34,7 @@ class IpcService(private val project: Project) {
     }
 
     // app name for the client
-    private val appName = "intellij"
+    private val appName = "jetbrains"
     private var id: String = UUID.randomUUID().toString()
     var webSocketSession: DefaultClientWebSocketSession? = null
     private var heartbeatScope: Job? = null
