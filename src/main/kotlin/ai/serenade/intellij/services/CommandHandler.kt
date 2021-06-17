@@ -67,6 +67,7 @@ class CommandHandler(private val project: Project) {
                     invokeRead(callback, remainingCommands) { copy(command) }
                 }
                 "COMMAND_TYPE_CREATE_TAB" -> {
+                    invokeAction(callback, remainingCommands, "NewFile")
                 }
                 "COMMAND_TYPE_DEBUGGER_CONTINUE" -> {
                     invokeAction(callback, remainingCommands, "Resume")
