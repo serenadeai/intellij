@@ -302,7 +302,7 @@ class CommandHandler(private val project: Project) {
         }
 
         // set source and cursor
-        if (command.source != null && command.cursor != null) {
+        if (command.source != null) {
             // standardize newline endings
             val source = Regex("\\r\\n").replace(command.source, "\n")
             editor.document.replaceString(
@@ -310,9 +310,13 @@ class CommandHandler(private val project: Project) {
                 editor.document.textLength,
                 source
             )
-            val cursor = editor.offsetToLogicalPosition(command.cursor)
+            var cursor = 0
+            if (command.cursor != null) {
+                cursor = command.cursor
+            }
+            val position = editor.offsetToLogicalPosition(cursor)
             editor.caretModel.caretsAndSelections = listOf(
-                CaretState(cursor, cursor, cursor)
+                CaretState(position, position, position)
             )
             editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
         }
