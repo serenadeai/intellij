@@ -2,6 +2,12 @@
 
 # Serenade for IntelliJ platform Changelog
 
+## [0.0.9] - 2021-07-19
+### Added
+- Open new files with "new file" voice command
+### Fixed
+- Bug preventing "go to line 1" from working as expected
+
 ## [0.0.8] - 2021-06-02
 ### Fixed
 - Slow-down/crash when using Serenade within modals (e.g. preferences window)
