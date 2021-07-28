@@ -2,6 +2,10 @@
 
 # Serenade for IntelliJ platform Changelog
 
+## [0.0.10] - 2021-07-29
+### Fixed
+- Tab indexing error preventing "last tab" commands from working
+
 ## [0.0.9] - 2021-07-19
 ### Added
 - Open new files with "new file" voice command

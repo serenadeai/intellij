@@ -126,7 +126,7 @@ class CommandHandler(private val project: Project) {
                 }
                 "COMMAND_TYPE_SWITCH_TAB" -> {
                     if (command.index != null) {
-                        invokeRead(callback, remainingCommands) { switchTab(command.index - 1) }
+                        invokeRead(callback, remainingCommands) { switchTab(command.index) }
                     }
                 }
                 "COMMAND_TYPE_UNDO" -> {
