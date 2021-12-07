@@ -41,8 +41,8 @@ repositories {
     jcenter()
 }
 dependencies {
-    implementation(kotlin("stdlib", org.jetbrains.kotlin.config.KotlinCompilerVersion.VERSION))
-    implementation(kotlin("stdlib-jdk8"))
+    implementation(kotlin("stdlib", "1.5.0-M2"))
+    implementation(kotlin("stdlib-jdk8", "1.5.0-M2"))
     implementation(kotlin("reflect", "1.5.0-M2"))
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.10.0")
     implementation("io.ktor:ktor-client-websockets:$ktorVersion") {
@@ -97,7 +97,10 @@ tasks {
     }
     listOf("compileKotlin", "compileTestKotlin").forEach {
         getByName<KotlinCompile>(it) {
-            kotlinOptions.jvmTarget = "1.8"
+            kotlinOptions {
+                jvmTarget = "1.8"
+                freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+            }
         }
     }
 

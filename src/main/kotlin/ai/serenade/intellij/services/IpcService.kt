@@ -8,6 +8,8 @@ import io.ktor.client.features.websocket.WebSockets
 import io.ktor.client.features.websocket.ws
 import io.ktor.http.cio.websocket.Frame
 import io.ktor.http.cio.websocket.readText
+import io.ktor.util.KtorExperimentalAPI
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -21,7 +23,7 @@ import java.util.UUID
 
 const val RECONNECT_TIMEOUT_MS: Long = 3000
 
-@io.ktor.util.KtorExperimentalAPI
+@KtorExperimentalAPI
 class IpcService(private val project: Project) {
     private var notifier: Notifier = Notifier(project)
     private var connectScope: Job? = null
@@ -42,6 +44,7 @@ class IpcService(private val project: Project) {
     fun start() {
         // ensure that reconnection loop is only started once
         if (connectScope == null) {
+            @OptIn(DelicateCoroutinesApi::class)
             connectScope = GlobalScope.launch {
                 while (true) {
                     // No-op if connected already
@@ -53,16 +56,14 @@ class IpcService(private val project: Project) {
             }
 
             // listen to focus, and update plugin active state
-            WindowManagerEx.getInstance().getFrame(project)
-                ?.addWindowListener(
-                    object : WindowAdapter() {
-                        override fun windowActivated(e: WindowEvent?) {
-                            GlobalScope.launch {
-                                sendAppStatus("active")
-                            }
-                        }
+            WindowManagerEx.getInstance().getFrame(project)?.addWindowListener(
+                object : WindowAdapter() {
+                    override fun windowActivated(e: WindowEvent?) {
+                        @OptIn(DelicateCoroutinesApi::class)
+                        GlobalScope.launch { sendAppStatus("active") }
                     }
-                )
+                }
+            )
         }
     }
 
@@ -76,15 +77,14 @@ class IpcService(private val project: Project) {
                 notifier.notify("Could not connect")
                 shouldNotify = false
             }
-            heartbeatScope?.cancel()
-            toolWindow.setContent(false)
+            onClose()
         } catch (e: Exception) {
             notifier.notify("Could not connect: $e")
-            heartbeatScope?.cancel()
-            toolWindow.setContent(false)
+            onClose()
         }
     }
 
+    @KtorExperimentalAPI
     private suspend fun tryConnect() {
         client.ws(
             host = "localhost",
@@ -95,6 +95,7 @@ class IpcService(private val project: Project) {
 
             // send a heartbeat in a separate coroutine
             id = UUID.randomUUID().toString()
+            @OptIn(DelicateCoroutinesApi::class)
             heartbeatScope = GlobalScope.launch {
                 while (isActive) {
                     sendAppStatus("heartbeat")
@@ -112,16 +113,8 @@ class IpcService(private val project: Project) {
                 }
             }
         }
-
-        // wait for the session to be closed by the client:
-        GlobalScope.launch {
-            webSocketSession?.closeReason?.await()
-            notifier.notify("Disconnected")
-            shouldNotify = true
-            heartbeatScope?.cancel()
-            toolWindow.setContent(false)
-            webSocketSession = null
-        }
+        notifier.notify("Disconnected")
+        webSocketSession = null
     }
 
     private suspend fun sendAppStatus(name: String) {
@@ -151,5 +144,10 @@ class IpcService(private val project: Project) {
             notifier.notify("Failed to parse or execute: " + frame.readText())
             notifier.notify(e.toString())
         }
+    }
+
+    private fun onClose() {
+        heartbeatScope?.cancel()
+        toolWindow.setContent(false)
     }
 }
