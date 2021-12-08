@@ -20,6 +20,7 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import io.ktor.client.features.websocket.DefaultClientWebSocketSession
 import io.ktor.http.cio.websocket.Frame
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.* // ktlint-disable no-wildcard-imports
@@ -146,6 +147,7 @@ class CommandHandler(private val project: Project) {
     }
 
     private fun sendCallback(callback: String, data: CallbackData?) {
+        @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch {
             webSocketSession?.send(
                 Frame.Text(

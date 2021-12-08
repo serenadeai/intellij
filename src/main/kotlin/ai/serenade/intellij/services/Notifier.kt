@@ -3,6 +3,7 @@ package ai.serenade.intellij.services
 import com.intellij.notification.NotificationGroupManager
 import com.intellij.notification.NotificationType
 import com.intellij.openapi.project.Project
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -16,6 +17,7 @@ class Notifier(private val project: Project) {
                 "Serenade: $message",
                 NotificationType.INFORMATION
             )
+        @OptIn(DelicateCoroutinesApi::class)
         GlobalScope.launch {
             delay(5000)
             notification.expire()
