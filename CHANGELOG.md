@@ -2,6 +2,11 @@
 
 # Serenade for IntelliJ platform Changelog
 
+## [0.0.11] - 2021-12-07
+
+### Fixed
+- Issue with plugin not disconnecting and reconnecting from client properly
+
 ## [0.0.10] - 2021-08-02
 
 ### Added
