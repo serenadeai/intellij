@@ -84,7 +84,6 @@ class IpcService(private val project: Project) {
         }
     }
 
-    @KtorExperimentalAPI
     private suspend fun tryConnect() {
         client.ws(
             host = "localhost",
