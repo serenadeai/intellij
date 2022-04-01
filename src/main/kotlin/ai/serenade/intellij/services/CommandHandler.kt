@@ -53,13 +53,10 @@ class CommandHandler(private val project: Project) {
         data: CallbackData? = null
     ) {
         if (commandsList.isEmpty()) {
-//            notifier.notify(callback)
-//            notifier.notify(data.toString())
             sendCallback(callback, data)
         } else {
             val command = commandsList.first()
             val remainingCommands = commandsList.takeLast(commandsList.size - 1)
-
             when (command.type) {
                 "COMMAND_TYPE_CLOSE_TAB" -> {
                     invokeRead(callback, remainingCommands) { closeTab() }
@@ -366,6 +363,8 @@ class CommandHandler(private val project: Project) {
                 ""
             }
         }
+        val canGetState = source != ""
+        val canSetState = filename != ""
 
         return CallbackData(
             "editorState",
@@ -375,7 +374,9 @@ class CommandHandler(private val project: Project) {
                 filename,
                 files,
                 roots,
-                tabs
+                tabs,
+                canGetState = canGetState,
+                canSetState = canSetState
             )
         )
     }

@@ -82,7 +82,11 @@ data class NestedData(
 
     // error state for editor state under modals
     var error: Boolean? = false,
-)
+
+    val canGetState: Boolean? = false,
+    val canSetState: Boolean? = false,
+
+    )
 
 val json = Json {
     encodeDefaults = false; // don't include all the null values
