@@ -1,19 +1,25 @@
-# Serenade for IntelliJ
+# Serenade for JetBrains
 
 ![Build](https://github.com/serenadeai/intellij/workflows/Build/badge.svg)
 [![Version](https://img.shields.io/jetbrains/plugin/v/14939-serenade.svg)](https://img.shields.io/jetbrains/plugin/v/14939-serenade.svg)
 [![Downloads](https://img.shields.io/jetbrains/plugin/d/14939-serenade.svg)](https://img.shields.io/jetbrains/plugin/d/14939-serenade.svg)
 
 <!-- Plugin description -->
-The Serenade for IntelliJ plugin provides editing support and tab management.
+To use Serenade for JetBrains, you'll also need the Serenade app, which is freely available at https://serenade.ai.
+
+Serenade is the fastest and easiest way to write code with natural speech. Give your hands a break without missing a beat.
+
+Edit code, run terminal commands, and write documentation entirely with voice. Whether you have an injury or you’re looking to prevent one, Serenade can help you be just as productive without lifting a finger. Use voice alongside your existing workflow, or abandon your keyboard entirely.
+
+Learn more at https://serenade.ai.
 <!-- Plugin description end -->
 
-## Development 
+## Development
 
 ### Prerequisites
 
 1. IntelliJ IDEA 2021.1 (latest)
-1. 
+1.
     ```
     brew install ktlint
     ktlint installGitPreCommitHook
