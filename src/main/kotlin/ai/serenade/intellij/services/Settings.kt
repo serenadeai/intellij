@@ -1,6 +1,6 @@
 package ai.serenade.intellij.services
 
-import kotlinx.serialization.* // ktlint-disable no-wildcard-imports
+import kotlinx.serialization.Serializable
 import java.nio.file.Files
 import java.nio.file.Paths
 
@@ -16,15 +16,13 @@ class Settings {
         "serenade.json"
     )
 
-    private var settingsFile: String = try {
+    private val settingsFile: String = try {
         Files.readAllLines(fileName).joinToString(separator = "\n")
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         "{}"
     }
 
     private val settings = json.decodeFromString<SettingsFile>(settingsFile)
 
-    fun installed(): Boolean {
-        return settings.installed ?: false
-    }
+    fun installed(): Boolean = settings.installed ?: false
 }

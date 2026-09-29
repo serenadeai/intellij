@@ -6,7 +6,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManagerListener
 
 class MyProjectManagerListener : ProjectManagerListener {
-    @io.ktor.util.KtorExperimentalAPI
+    @Deprecated("Use MyProjectActivity instead.")
     override fun projectOpened(project: Project) {
         val projectService = project.service<IpcService>()
         projectService.start()

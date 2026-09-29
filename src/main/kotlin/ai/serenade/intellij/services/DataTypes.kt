@@ -1,6 +1,6 @@
 package ai.serenade.intellij.services
 
-import kotlinx.serialization.* // ktlint-disable no-wildcard-imports
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 // From client app
@@ -74,18 +74,18 @@ data class NestedData(
     val cursor: Int? = null,
     val filename: String? = null,
     val files: List<String>? = null,
-    var roots: List<String>? = null,
-    var tabs: List<String>? = null,
+    val roots: List<String>? = null,
+    val tabs: List<String>? = null,
 
     // OPEN_FILE_LIST
     val text: String? = null,
 
-    // error state for editor state under modals
-    var error: Boolean? = false,
+    // Error state for editor state under modals
+    val error: Boolean? = false
 )
 
 val json = Json {
-    encodeDefaults = false; // don't include all the null values
-    ignoreUnknownKeys = true; // don't break on parsing unknown responses
+    encodeDefaults = false // don't include all the null values
+    ignoreUnknownKeys = true // don't break on parsing unknown responses
     isLenient = true // empty strings
 }

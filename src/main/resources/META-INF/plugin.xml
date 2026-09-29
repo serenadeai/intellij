@@ -1,25 +1,25 @@
 <idea-plugin>
     <id>ai.serenade.intellij</id>
     <name>Serenade</name>
-    <vendor>Serenade</vendor>
-
-    <!-- Product and plugin compatibility requirements -->
-    <!-- https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html -->
+    <vendor url="https://serenade.ai/">Serenade</vendor>
+    <description><![CDATA[
+        <p>Use Serenade to edit code, run terminal commands, and write documentation with your voice.</p>
+        <p>The Serenade desktop app is required and is freely available at <a href="https://serenade.ai/">serenade.ai</a>.</p>
+    ]]></description>
     <depends>com.intellij.modules.platform</depends>
+
+    <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
         <projectService serviceImplementation="ai.serenade.intellij.services.IpcService"/>
         <toolWindow id="Serenade" anchor="right" factoryClass="ai.serenade.intellij.MainToolWindow"/>
         <notificationGroup id="Serenade" displayType="BALLOON" key="ai.serenade"/>
+        <backgroundPostStartupActivity implementation="ai.serenade.intellij.listeners.MyProjectActivity"/>
     </extensions>
-
-    <applicationListeners>
-        <listener class="ai.serenade.intellij.listeners.MyProjectManagerListener"
-                  topic="com.intellij.openapi.project.ProjectManagerListener"/>
-    </applicationListeners>
 
     <projectListeners>
         <listener class="ai.serenade.intellij.listeners.MyToolWindowListener"
                   topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener"/>
     </projectListeners>
+
 </idea-plugin>

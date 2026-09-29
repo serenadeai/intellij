@@ -1,21 +1,15 @@
 package ai.serenade.intellij
 
-import com.intellij.AbstractBundle
-import org.jetbrains.annotations.NonNls
+import com.intellij.DynamicBundle
+import org.jetbrains.annotations.Nls
 import org.jetbrains.annotations.PropertyKey
 
-@NonNls
 private const val BUNDLE = "messages.MyBundle"
 
-object MyBundle : AbstractBundle(BUNDLE) {
+internal object MyBundle {
+    private val instance = DynamicBundle(MyBundle::class.java, BUNDLE)
 
-    @Suppress("SpreadOperator")
     @JvmStatic
-    fun message(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any) = getMessage(key, *params)
-
-    @Suppress("SpreadOperator")
-    @JvmStatic
-    fun messagePointer(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any) = run {
-        message(key, *params)
-    }
+    fun message(@PropertyKey(resourceBundle = BUNDLE) key: String, vararg params: Any?): @Nls String =
+        instance.getMessage(key, *params)
 }

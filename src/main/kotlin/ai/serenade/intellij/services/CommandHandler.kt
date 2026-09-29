@@ -1,10 +1,7 @@
 package ai.serenade.intellij.services
 
-import com.intellij.ide.DataManager
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
-import com.intellij.openapi.actionSystem.AnActionEvent
-import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.command.WriteCommandAction
@@ -18,20 +15,21 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.FileIndexFacade
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
-import io.ktor.client.features.websocket.DefaultClientWebSocketSession
-import io.ktor.http.cio.websocket.Frame
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
+import com.intellij.openapi.wm.WindowManager
+import io.ktor.client.plugins.websocket.DefaultClientWebSocketSession
+import io.ktor.websocket.Frame
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.serialization.* // ktlint-disable no-wildcard-imports
 import java.awt.datatransfer.StringSelection
 import java.nio.file.Paths
 
-class CommandHandler(private val project: Project) {
-    private val notifier = Notifier(project)
+class CommandHandler(
+    private val project: Project,
+    private val scope: CoroutineScope
+) {
+    private val notifier = Notifier(project, scope)
     private var webSocketSession: DefaultClientWebSocketSession? = null
-
-    private var openFileList: List<String>? = null
+    private var openFileList: MutableList<String>? = null
 
     fun handle(
         clientRequest: RequestData,
@@ -42,7 +40,6 @@ class CommandHandler(private val project: Project) {
         val commandsList = clientRequest.response?.execute?.commandsList
 
         if (callback != null && commandsList != null) {
-            // runs commands in order and sends callback after the last one
             runCommandsInQueue(callback, commandsList)
         }
     }
@@ -53,102 +50,48 @@ class CommandHandler(private val project: Project) {
         data: CallbackData? = null
     ) {
         if (commandsList.isEmpty()) {
-//            notifier.notify(callback)
-//            notifier.notify(data.toString())
             sendCallback(callback, data)
-        } else {
-            val command = commandsList.first()
-            val remainingCommands = commandsList.takeLast(commandsList.size - 1)
+            return
+        }
 
-            when (command.type) {
-                "COMMAND_TYPE_CLOSE_TAB" -> {
-                    invokeRead(callback, remainingCommands) { closeTab() }
-                }
-                "COMMAND_TYPE_COPY" -> {
-                    invokeRead(callback, remainingCommands) { copy(command) }
-                }
-                "COMMAND_TYPE_CREATE_TAB" -> {
-                    invokeAction(callback, remainingCommands, "NewFile")
-                }
-                "COMMAND_TYPE_DEBUGGER_CONTINUE" -> {
-                    invokeAction(callback, remainingCommands, "Resume")
-                }
-                "COMMAND_TYPE_DEBUGGER_INLINE_BREAKPOINT" -> {
-                }
-                "COMMAND_TYPE_DEBUGGER_PAUSE" -> {
-                    invokeAction(callback, remainingCommands, "Pause")
-                }
-                "COMMAND_TYPE_DEBUGGER_SHOW_HOVER" -> {
-                }
-                "COMMAND_TYPE_DEBUGGER_START" -> {
-                    invokeAction(callback, remainingCommands, "Debug")
-                }
-                "COMMAND_TYPE_DEBUGGER_STEP_INTO" -> {
-                    invokeAction(callback, remainingCommands, "StepInto")
-                }
-                "COMMAND_TYPE_DEBUGGER_STEP_OUT" -> {
-                    invokeAction(callback, remainingCommands, "StepOut")
-                }
-                "COMMAND_TYPE_DEBUGGER_STEP_OVER" -> {
-                    invokeAction(callback, remainingCommands, "StepOver")
-                }
-                "COMMAND_TYPE_DEBUGGER_STOP" -> {
-                    invokeAction(callback, remainingCommands, "Stop")
-                }
-                "COMMAND_TYPE_DEBUGGER_TOGGLE_BREAKPOINT" -> {
-                    invokeAction(callback, remainingCommands, "ToggleLineBreakpoint")
-                }
-                "COMMAND_TYPE_DIFF" -> {
-                    invokeWrite(callback, remainingCommands, "Diff") { diff(command) }
-                }
-                "COMMAND_TYPE_GET_EDITOR_STATE" -> {
-                    invokeRead(callback, remainingCommands, ModalityState.any()) { checkModality { sendEditorState() } }
-                }
-                "COMMAND_TYPE_NEXT_TAB" -> {
-                    invokeRead(callback, remainingCommands) { rotateTab(1) }
-                }
-                "COMMAND_TYPE_OPEN_FILE" -> {
-                    invokeRead(callback, remainingCommands) { open(command) }
-                }
-                "COMMAND_TYPE_OPEN_FILE_LIST" -> {
-                    invokeRead(callback, remainingCommands) { setOpenFileList(command) }
-                }
-                "COMMAND_TYPE_PREVIOUS_TAB" -> {
-                    invokeRead(callback, remainingCommands) { rotateTab(-1) }
-                }
-                "COMMAND_TYPE_REDO" -> {
-                    invokeRead(callback, remainingCommands) { redo() }
-                }
-                "COMMAND_TYPE_SAVE" -> {
-                    invokeRead(callback, remainingCommands) { save() }
-                }
-                "COMMAND_TYPE_SELECT" -> {
-                    invokeWrite(callback, remainingCommands, "Select") { select(command) }
-                }
-                "COMMAND_TYPE_SWITCH_TAB" -> {
-                    if (command.index != null) {
-                        invokeRead(callback, remainingCommands) { switchTab(command.index - 1) }
-                    }
-                }
-                "COMMAND_TYPE_UNDO" -> {
-                    invokeRead(callback, remainingCommands) { undo() }
-                }
-                else -> {
-                    /*
-                     * Not supported (client runs):
-                     * - COMMAND_TYPE_PRESS
-                     * - ...
-                     */
-//                    notifier.notify("Command type not implemented: " + command.type)
-                    runCommandsInQueue(callback, remainingCommands, data)
-                }
+        val command = commandsList.first()
+        val remainingCommands = commandsList.drop(1)
+
+        when (command.type) {
+            "COMMAND_TYPE_CLOSE_TAB" -> invokeRead(callback, remainingCommands) { closeTab() }
+            "COMMAND_TYPE_COPY" -> invokeRead(callback, remainingCommands) { copy(command) }
+            "COMMAND_TYPE_CREATE_TAB" -> invokeAction(callback, remainingCommands, "NewFile")
+            "COMMAND_TYPE_DEBUGGER_CONTINUE" -> invokeAction(callback, remainingCommands, "Resume")
+            "COMMAND_TYPE_DEBUGGER_INLINE_BREAKPOINT" -> runCommandsInQueue(callback, remainingCommands, data)
+            "COMMAND_TYPE_DEBUGGER_PAUSE" -> invokeAction(callback, remainingCommands, "Pause")
+            "COMMAND_TYPE_DEBUGGER_SHOW_HOVER" -> runCommandsInQueue(callback, remainingCommands, data)
+            "COMMAND_TYPE_DEBUGGER_START" -> invokeAction(callback, remainingCommands, "Debug")
+            "COMMAND_TYPE_DEBUGGER_STEP_INTO" -> invokeAction(callback, remainingCommands, "StepInto")
+            "COMMAND_TYPE_DEBUGGER_STEP_OUT" -> invokeAction(callback, remainingCommands, "StepOut")
+            "COMMAND_TYPE_DEBUGGER_STEP_OVER" -> invokeAction(callback, remainingCommands, "StepOver")
+            "COMMAND_TYPE_DEBUGGER_STOP" -> invokeAction(callback, remainingCommands, "Stop")
+            "COMMAND_TYPE_DEBUGGER_TOGGLE_BREAKPOINT" -> invokeAction(callback, remainingCommands, "ToggleLineBreakpoint")
+            "COMMAND_TYPE_DIFF" -> invokeWrite(callback, remainingCommands, "Diff") { diff(command) }
+            "COMMAND_TYPE_GET_EDITOR_STATE" -> invokeRead(callback, remainingCommands, ModalityState.any()) {
+                checkModality { sendEditorState() }
             }
+            "COMMAND_TYPE_NEXT_TAB" -> invokeRead(callback, remainingCommands) { rotateTab(1) }
+            "COMMAND_TYPE_OPEN_FILE" -> invokeRead(callback, remainingCommands) { open(command) }
+            "COMMAND_TYPE_OPEN_FILE_LIST" -> invokeRead(callback, remainingCommands) { setOpenFileList(command) }
+            "COMMAND_TYPE_PREVIOUS_TAB" -> invokeRead(callback, remainingCommands) { rotateTab(-1) }
+            "COMMAND_TYPE_REDO" -> invokeRead(callback, remainingCommands) { redo() }
+            "COMMAND_TYPE_SAVE" -> invokeRead(callback, remainingCommands) { save() }
+            "COMMAND_TYPE_SELECT" -> invokeWrite(callback, remainingCommands, "Select") { select(command) }
+            "COMMAND_TYPE_SWITCH_TAB" -> command.index?.let {
+                invokeRead(callback, remainingCommands) { switchTab(it - 1) }
+            }
+            "COMMAND_TYPE_UNDO" -> invokeRead(callback, remainingCommands) { undo() }
+            else -> runCommandsInQueue(callback, remainingCommands, data)
         }
     }
 
     private fun sendCallback(callback: String, data: CallbackData?) {
-        @OptIn(DelicateCoroutinesApi::class)
-        GlobalScope.launch {
+        scope.launch {
             webSocketSession?.send(
                 Frame.Text(
                     json.encodeToString(
@@ -162,12 +105,8 @@ class CommandHandler(private val project: Project) {
         }
     }
 
-    /*
-     * Wrappers
-     */
-
     private fun checkModality(action: () -> CallbackData?): CallbackData? {
-        return if (ModalityState.current() == ModalityState.NON_MODAL) {
+        return if (ModalityState.current() == ModalityState.nonModal()) {
             action()
         } else {
             CallbackData("modal", NestedData(filename = "jetbrains-modal", error = true))
@@ -176,24 +115,14 @@ class CommandHandler(private val project: Project) {
 
     private fun executeAction(actionName: String) {
         val action = ActionManager.getInstance().getAction(actionName) ?: return
-        // UiHelper.runAfterGotFocus({ executeAction(editor, cmd, action, context, actionName) })
-        // does this:   IdeFocusManager.findInstance().doWhenFocusSettlesDown(runnable, ModalityState.defaultModalityState())
-        DataManager.getInstance().dataContextFromFocusAsync.onSuccess { context: DataContext? ->
-            if (context != null) {
-                val event = AnActionEvent(
-                    null,
-                    context,
-                    ActionPlaces.ACTION_SEARCH,
-                    action.templatePresentation,
-                    ActionManager.getInstance(),
-                    0
-                )
-                action.beforeActionPerformedUpdate(event)
-                if (event.presentation.isEnabled) {
-                    action.actionPerformed(event)
-                }
-            }
-        }
+        val focusOwner = WindowManager.getInstance().getFrame(project)?.focusOwner
+        ActionManager.getInstance().tryToExecute(
+            action,
+            null,
+            focusOwner,
+            ActionPlaces.ACTION_SEARCH,
+            true
+        )
     }
 
     private fun invokeAction(
@@ -207,7 +136,6 @@ class CommandHandler(private val project: Project) {
         }
     }
 
-    // run some read action and then run remaining commands
     private fun invokeRead(
         callback: String,
         remainingCommands: List<Command>,
@@ -220,7 +148,6 @@ class CommandHandler(private val project: Project) {
         )
     }
 
-    // run some write action and then run remaining commands
     private fun invokeWrite(
         callback: String,
         remainingCommands: List<Command>,
@@ -234,115 +161,78 @@ class CommandHandler(private val project: Project) {
             }
     }
 
-    /*
-     * Tab management
-     */
-
     private fun closeTab(): CallbackData? {
-        // close tab
         val manager = FileEditorManagerEx.getInstanceEx(project)
         manager.currentFile?.let { manager.closeFile(it) }
         return null
     }
 
     private fun rotateTab(direction: Int): CallbackData? {
-        val manager = FileEditorManagerEx.getInstanceEx(project)
-        val window = manager.currentWindow
+        val window = FileEditorManagerEx.getInstanceEx(project).currentWindow ?: return null
         var index = 0
-        // find the current tab index and shift
-        for (i in 0 until window.tabCount) {
-            val editor = window.editors[i]
-            if (editor == window.selectedEditor) {
+        val editors = window.allComposites
+        for (i in editors.indices) {
+            if (editors[i] == window.selectedComposite) {
                 index = i
+                break
             }
         }
-        index += direction
-        // switch tab will catch over/underflow
-        return switchTab(index)
+        return switchTab(index + direction)
     }
 
     private fun switchTab(index: Int): CallbackData? {
-        val manager = FileEditorManagerEx.getInstanceEx(project)
-        val window = manager.currentWindow
-        // catch over/underflow
-        var newIndex = index
-        if (index < 0) {
-            newIndex = window.editors.size - 1
+        val window = FileEditorManagerEx.getInstanceEx(project).currentWindow ?: return null
+        val editors = window.allComposites
+        if (editors.isEmpty()) {
+            return null
         }
-        if (index >= window.editors.size) {
-            newIndex = 0
+
+        val newIndex = when {
+            index < 0 -> editors.size - 1
+            index >= editors.size -> 0
+            else -> index
         }
-        // switch tab
-        window.setSelectedEditor(window.editors[newIndex], true)
+        window.setSelectedComposite(editors[newIndex], true)
         return null
     }
 
     private fun open(command: Command): CallbackData? {
         val index = command.index ?: 0
-        if (openFileList != null && openFileList!!.size > index) {
-            val path = Paths.get(openFileList!![index])
-            val virtualFile = VfsUtil.findFile(path, true)
-            if (virtualFile != null) {
-                val manager = FileEditorManagerEx.getInstanceEx(project)
-                manager.openFile(virtualFile, true)
-            }
-        }
-
+        val path = openFileList?.getOrNull(index) ?: return null
+        val virtualFile = VfsUtil.findFile(Paths.get(path), true) ?: return null
+        FileEditorManagerEx.getInstanceEx(project).openFile(virtualFile, true)
         return null
     }
 
-    /*
-     * Editor state
-     */
-
     private fun diff(command: Command): CallbackData? {
-        val manager = FileEditorManagerEx.getInstanceEx(project)
-        val editor = manager.selectedTextEditor
+        val editor = FileEditorManagerEx.getInstanceEx(project).selectedTextEditor
         if (editor == null) {
             notifier.notify("no selected text editor")
             return null
         }
 
-        // set source and cursor
         if (command.source != null) {
-            // standardize newline endings
-            val source = Regex("\\r\\n").replace(command.source, "\n")
-            editor.document.replaceString(
-                0,
-                editor.document.textLength,
-                source
-            )
-            var cursor = 0
-            if (command.cursor != null) {
-                cursor = command.cursor
-            }
+            val source = command.source.replace(Regex("\\r\\n"), "\\n")
+            editor.document.replaceString(0, editor.document.textLength, source)
+            val cursor = command.cursor ?: 0
             val position = editor.offsetToLogicalPosition(cursor)
-            editor.caretModel.caretsAndSelections = listOf(
-                CaretState(position, position, position)
-            )
+            editor.caretModel.caretsAndSelections = listOf(CaretState(position, position, position))
             editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
         }
         return null
     }
 
     private fun select(command: Command): CallbackData? {
-        val manager = FileEditorManagerEx.getInstanceEx(project)
-        val editor = manager.selectedTextEditor
+        val editor = FileEditorManagerEx.getInstanceEx(project).selectedTextEditor
         if (editor == null) {
             notifier.notify("no selected text editor")
             return null
         }
 
-        // set cursor
-        if (command.source != null &&
-            command.cursor != null &&
-            command.cursorEnd != null
-        ) {
+        if (command.source != null && command.cursor != null && command.cursorEnd != null) {
             val cursor = editor.offsetToLogicalPosition(command.cursor)
             val cursorEnd = editor.offsetToLogicalPosition(command.cursorEnd)
-            editor.caretModel.caretsAndSelections = listOf(
-                CaretState(cursor, cursor, cursorEnd)
-            )
+            editor.caretModel.caretsAndSelections = listOf(CaretState(cursor, cursor, cursorEnd))
             editor.scrollingModel.scrollToCaret(ScrollType.RELATIVE)
         }
         return null
@@ -350,103 +240,77 @@ class CommandHandler(private val project: Project) {
 
     private fun sendEditorState(): CallbackData {
         val manager = FileEditorManagerEx.getInstanceEx(project)
-        val files: List<String> = openFileList ?: listOf()
-        val roots: List<String> = listOf(project.basePath ?: "")
-        val tabs: List<String> = manager.currentWindow?.files?.map { it.name } ?: listOf()
-
+        val files: List<String> = openFileList ?: emptyList()
+        val roots = listOf(project.basePath ?: "")
+        val tabs = manager.currentWindow?.fileList?.map { it.name } ?: emptyList()
         val editor = manager.selectedTextEditor
-        // build editor state data
         val document = editor?.document
-        val source = document?.text ?: ""
-        val cursor = editor?.selectionModel?.selectionStart ?: 0
-        val filename = document.let {
-            if (it != null) {
-                FileDocumentManager.getInstance().getFile(it)?.name
-            } else {
-                ""
-            }
-        }
+        val filename = document?.let { FileDocumentManager.getInstance().getFile(it)?.name } ?: ""
 
         return CallbackData(
             "editorState",
             NestedData(
-                source,
-                cursor,
-                filename,
-                files,
-                roots,
-                tabs
+                source = document?.text ?: "",
+                cursor = editor?.selectionModel?.selectionStart ?: 0,
+                filename = filename,
+                files = files,
+                roots = roots,
+                tabs = tabs
             )
         )
     }
 
     private fun setOpenFileList(command: Command): CallbackData {
-        if (command.path != null) {
-            val pattern = ".*" + command.path.toLowerCase().replace(Regex(" "), ".") + ".*"
-            val base = Paths.get(project.basePath!!)
-            val projectDir = VfsUtil.findFile(base, true)!!
-            val fileIndex = FileIndexFacade.getInstance(project)
+        val basePath = project.basePath
+        val query = command.path
+        if (basePath != null && query != null) {
+            val pattern = ".*" + query.lowercase().replace(Regex(" "), ".") + ".*"
+            val projectDir = VfsUtil.findFile(Paths.get(basePath), true)
+            if (projectDir != null) {
+                val fileIndex = FileIndexFacade.getInstance(project)
+                openFileList = mutableListOf()
 
-            openFileList = mutableListOf()
-
-            VfsUtil.processFileRecursivelyWithoutIgnored(
-                projectDir
-            ) { file: VirtualFile ->
-                if ((openFileList as MutableList<String>).size < 20 &&
-                    !file.isDirectory &&
-                    !fileIndex.isExcludedFile(file) &&
-                    file.path.matches(Regex(pattern, RegexOption.IGNORE_CASE))
-                ) {
-                    (openFileList as MutableList<String>).add(file.path)
+                VfsUtil.processFileRecursivelyWithoutIgnored(projectDir) { file: VirtualFile ->
+                    if (openFileList!!.size < 20 &&
+                        !file.isDirectory &&
+                        !fileIndex.isExcludedFile(file) &&
+                        file.path.matches(Regex(pattern, RegexOption.IGNORE_CASE))
+                    ) {
+                        openFileList!!.add(file.path)
+                    }
+                    true
                 }
-                true
             }
         }
 
         return CallbackData(
             "sendText",
-            NestedData(
-                text = "callback open"
-            )
+            NestedData(text = "callback open")
         )
     }
 
-    /*
-     * Clipboard
-     */
-
     private fun copy(command: Command): CallbackData? {
         if (command.text != null) {
-            val manager = FileEditorManagerEx.getInstanceEx(project)
-            val editor = manager.selectedTextEditor
-            if (editor == null) {
+            if (FileEditorManagerEx.getInstanceEx(project).selectedTextEditor == null) {
                 notifier.notify("no selected text editor")
                 return null
             }
-            // copy
-            val copyPasteManager = CopyPasteManager.getInstance()
-            copyPasteManager.setContents(StringSelection(command.text))
+            CopyPasteManager.getInstance().setContents(StringSelection(command.text))
         }
         return null
     }
 
-    /*
-     * Actions
-     */
-
     private fun save(): CallbackData? {
-        val manager = FileEditorManagerEx.getInstanceEx(project)
-        val document = manager.selectedTextEditor?.document
+        val document = FileEditorManagerEx.getInstanceEx(project).selectedTextEditor?.document
         if (document != null) {
-            val fileDocumentManager = FileDocumentManager.getInstance()
-            fileDocumentManager.saveDocument(document)
+            FileDocumentManager.getInstance().saveDocument(document)
         }
         return null
     }
 
     private fun redo(): CallbackData? {
         val manager = FileEditorManagerEx.getInstanceEx(project)
-        val fileEditor = manager.selectedEditor
+        val fileEditor = manager.selectedEditor ?: return null
         val undoManager = UndoManager.getInstance(project)
         if (undoManager.isRedoAvailable(fileEditor)) {
             undoManager.redo(fileEditor)
@@ -456,7 +320,7 @@ class CommandHandler(private val project: Project) {
 
     private fun undo(): CallbackData? {
         val manager = FileEditorManagerEx.getInstanceEx(project)
-        val fileEditor = manager.selectedEditor
+        val fileEditor = manager.selectedEditor ?: return null
         val undoManager = UndoManager.getInstance(project)
         if (undoManager.isUndoAvailable(fileEditor)) {
             undoManager.undo(fileEditor)

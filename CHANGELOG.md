@@ -1,6 +1,14 @@
 <!-- Keep a Changelog guide -> https://keepachangelog.com -->
 
-# Serenade for IntelliJ platform Changelog
+# Serenade for IntelliJ Platform Changelog
+
+## [0.0.12] - 2026-09-28
+
+### Changed
+
+- Migrated the plugin to the IntelliJ Platform Gradle Plugin 2.x.
+- Updated the plugin to target IntelliJ Platform 2025.3 and newer IDEs.
+- Updated the WebSocket client and tool window UI to current APIs.
 
 ## [0.0.11] - 2021-12-07
 
@@ -77,5 +85,5 @@
 - Tool window showing connection status and retry action
 - Support for basic commands including tab navigation, reading and modifying editor state, and clipboard actions
 - Limitations:
-  - Only one project can be connected at once
-  - Some commands, such as new file and open file, are not yet implemented
+    - Only one project can be connected at once
+    - Some commands, such as new file and open file, are not yet implemented
